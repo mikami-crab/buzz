@@ -6,7 +6,7 @@
 function getData() {
     //alert(document.getElementById('youtubeliveid').value);
     // 非同期メッセージの送信
-    window.ipcRenderer.send('asynchronous-liveId', document.getElementById('youtubeliveid').value);
+    window.ipcRenderer.send('asynchronous-liveId', document.getElementById('discordbottoken').value, document.getElementById('texttospeechapikey').value, document.getElementById('youtubeliveid').value);
 }
 
 document.querySelector('#buttonLoad').addEventListener('click', () => {
@@ -17,6 +17,8 @@ document.querySelector('#buttonLoad').addEventListener('click', () => {
 window.ipcRenderer.on('asynchronous-liveId-reply', (event, arg) => {
   // 受信時のコールバック関数
   console.log(arg) // pong
+  document.getElementById('chatcomment').value = arg;
+  
 });
 
 /** ↓↓未使用サンプル↓↓ */
