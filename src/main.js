@@ -9,12 +9,13 @@ const util = require('util');
 const Discord = require('discord.js');
 
 // Creates a client
-const testToSpeechClient = new textToSpeech.TextToSpeechClient();
+const textToSpeechClient = new textToSpeech.TextToSpeechClient();
 
 let mainWindow;
 const discordClient = new Discord.Client();
 
 let voiceChannel = null;
+let connection = null;
 
 let queue = []
 let isPlaying = false
@@ -69,21 +70,47 @@ function addAudioToQueue(path, voiceChannel) {
 
 function playAudio() {
     console.log('playAudio start');
+
+    // キューがないなら何もしない
+    if (queue.length == 0) {
+        console.log('playAudio no queue');
+        return;
+    }
     if (queue.length >= 1 && !isPlaying ) {
-        console.log('playAudio play');
-        queue[0].voiceChannel.join().then(connection => {
-            console.log('playAudio join then');
-            const dispatcher = connection.play(queue[0].path);
-            dispatcher.on('finish', () => {
-                console.log('playAudio finish');
-                queue.shift()
-                playAudio()
-                isPlaying = true
-            })
-        })
-    } else {
-        console.log('playAudio skip');
-        isPlaying = false
+        isPlaying = true;
+        console.log('playAudio play : ' + queue[0].path);
+        const dispatcher = connection.play(queue[0].path, {
+            volume: 0.5,
+          });
+        dispatcher.on('finish', () => {
+            console.log('playAudio finish');
+            // 再生し終わった音声ファイルを削除する
+            fs.unlinkSync(queue[0].path, function(err){
+                if(err){
+                  throw(err);
+                }
+                console.log(`deleted`);
+              });
+            queue.shift()
+            isPlaying = false;
+            playAudio()});
+        // queue[0].voiceChannel.join().then(connection => {
+        //     console.log('playAudio join then');
+        //     const dispatcher = connection.play(queue[0].path);
+        //     dispatcher.on('finish', () => {
+        //         console.log('playAudio finish');
+        //         // 再生し終わった音声ファイルを削除する
+        //         fs.unlink(queue[0].path, function(err){
+        //             if(err){
+        //               throw(err);
+        //             }
+        //             console.log(`deleted`);
+        //           });
+        //         queue.shift()
+        //         playAudio()
+        //         isPlaying = true
+        //     })
+        // })
     }
 }
 
@@ -120,6 +147,7 @@ ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, y
         console.log("ready...");
     });
 
+    // discordのメッセージ受信イベント
     discordClient.on("message", async message => {
         
         if (message.author.bot) {
@@ -131,13 +159,11 @@ ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, y
             // 発言者が現在いるボイスチャンネルを取得する
             const authorChannelId = message.member.voice.channel.id
             
-            const connection = message.client.voice.connections.find(connection => connection.channel.id === authorChannelId);
-            
             if (message.user == message.client.user || authorChannelId == null) {
                 return;
             }
 
-            // buzzコマンド用処理
+            // buzzコマンド
             if (message.content.startsWith(prefix)) {
 
                 const input = message.content.replace(prefix, "").split(" ")
@@ -147,13 +173,12 @@ ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, y
                 if (command === "buzz") {
                     if (args.length > 0) {
                         if (args[0] === "join") {
-                            await message.member.voice.channel.join();
-                            voiceChannel = message.member.voice.channel;
+                            console.log("/buzz join");
+                            connection = await message.member.voice.channel.join();
                         } else if (args[0] === "shutdown" || args[0] === "exit" )  {
-                            message.client.voice.connections.each(connection => {
-                                connection.disconnect();
-                                message.member.voice.channel.disconnect();
-                            })
+                            console.log("/buzz shutdown or exit");
+                            connection.disconnect();
+                            connection = null;
                         }
                     }
                 }
@@ -170,7 +195,9 @@ ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, y
     }
     );
 
+    // discordにログインする
     discordClient.login(discordbottoken);
+    // youtube liveに接続する
     liveChat.start();
 
     console.log('asynchronous-liveId_end');
@@ -179,10 +206,10 @@ ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, y
 // text to speech
 async function createSpeech(text) {
 
-    if (voiceChannel != null) {
-        console.log("connect voice channel")
+    if (connection != null) {
+        console.log("createSpeech discord connected")
     } else {
-        console.log("not connect voice channel")
+        console.log("createSpeech discord disconnected, skip text-to-speech")
         return;
     }
 
@@ -196,7 +223,7 @@ async function createSpeech(text) {
     };
 
     // Performs the text-to-speech request
-    const [response] = await testToSpeechClient.synthesizeSpeech(request);
+    const [response] = await textToSpeechClient.synthesizeSpeech(request);
     // Write the binary audio content to a local file
     //const writeFile = util.promisify(fs.writeFile);
     //await writeFile('output.mp3', response.audioContent, 'binary');
