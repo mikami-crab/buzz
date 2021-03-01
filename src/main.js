@@ -12,6 +12,7 @@ const Discord = require('discord.js');
 const textToSpeechClient = new textToSpeech.TextToSpeechClient();
 
 let mainWindow;
+
 const discordClient = new Discord.Client();
 
 let voiceChannel = null;
@@ -76,6 +77,8 @@ function playAudio() {
         console.log('playAudio no queue');
         return;
     }
+
+    // キューが残ってて再生できる状態の場合
     if (queue.length >= 1 && !isPlaying ) {
         isPlaying = true;
         console.log('playAudio play : ' + queue[0].path);
@@ -114,7 +117,7 @@ function playAudio() {
     }
 }
 
-// 非同期メッセージの受信と返信
+// UI側からの各パラメーター受信
 ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, youtubeliveid) => {
 
     const liveChat = new LiveChat({ liveId: youtubeliveid });
@@ -133,7 +136,9 @@ ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, y
     liveChat.on('comment', (comment) => {
         var messageaaa = comment.author.name + 'さん, ';
         comment.message.forEach(element => messageaaa += element.text);
+        // 画面側にチャット内容を送信
         event.reply('asynchronous-liveId-reply', messageaaa);
+        //
         createSpeech(messageaaa);
     });
 
@@ -184,12 +189,9 @@ ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, y
                 }
 
             } else if (connection != null) {
-                // チャットメッセージから何かを発する予定はない
+                // チャットメッセージから何かを喋らせる予定はない
                 // 何か喋らせたいときはここに追加
             }
-            let msg = message.content;
-            let channel = message.channel;
-            let author = message.author.username;
             return;
         }
     }
@@ -241,21 +243,3 @@ async function createSpeech(text) {
         playAudio()
     }
 }
-
-/** ↓↓未使用サンプル↓↓ */
-// 非同期メッセージの受信と返信
-ipcMain.on('asynchronous-message', (event, arg) => {
-    // 受信したコマンドの引数を表示する
-    console.log(arg) // ping
-
-    // 送信元のチャンネル('asynchronous-reply')に返信する
-    event.reply('asynchronous-reply', 'pong')
-})
-
-// 同期メッセージの受信と返信
-ipcMain.on('synchronous-message', (event, arg) => {
-    console.log(arg) // ping
-
-    // 非同期との違いは reply を使うか returnValue を使うか
-    event.returnValue = 'pong'
-})
