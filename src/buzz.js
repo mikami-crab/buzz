@@ -3,14 +3,14 @@
 // なぜかグローバル変数をconstに入れられない。
 //const { ipcRenderer } = window.ipcRenderer;
 //const { remote } = window.remote;
-function getData() {
+function connect() {
     //alert(document.getElementById('youtubeliveid').value);
     // 非同期メッセージの送信
     window.ipcRenderer.send('asynchronous-liveId', document.getElementById('discordbottoken').value, document.getElementById('texttospeechapikey').value, document.getElementById('youtubeliveid').value);
 }
 
 document.querySelector('#buttonLoad').addEventListener('click', () => {
-    getData()
+    connect()
 })
 
 // チャンネル 'asynchronous-reply' で非同期メッセージの受信を待機
