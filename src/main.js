@@ -8,6 +8,9 @@ const fs = require('fs');
 const util = require('util');
 const Discord = require('discord.js');
 
+const Store = require('electron-store');
+const store = new Store();
+
 // Creates a client
 const textToSpeechClient = new textToSpeech.TextToSpeechClient();
 
@@ -119,6 +122,11 @@ function playAudio() {
 
 // UI側からの各パラメーター受信
 ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, youtubeliveid) => {
+
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = texttospeechapikey;
+
+    store.set("discord_bot_token", discordbottoken);
+    store.set("text_to_speech_api_key_path", texttospeechapikey);
 
     const liveChat = new LiveChat({ liveId: youtubeliveid });
     
@@ -243,3 +251,10 @@ async function createSpeech(text) {
         playAudio()
     }
 }
+
+// UI側からの各パラメーター受信
+ipcMain.on('asynchronous-init-param', (event, discordbottoken) => {
+    
+    // 画面側にチャット内容を送信
+    event.reply('asynchronous-init-param-reply', store.get("discord_bot_token"), store.get("text_to_speech_api_key_path"));
+});
