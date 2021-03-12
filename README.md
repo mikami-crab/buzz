@@ -8,3 +8,8 @@
 * 起動後、「discord bot token」にbotのトークンを、「youtube live id」にライブチャットURL `https://www.youtube.com/watch?v=xxxx` のxxxx部分をいれる(渋谷のライブカメラ `lkIJYc4UH60` が適度にライブチャットされてておススメ)  
 * 自身がボイチャに接続後、どこのチャンネルでもいいので `/buzz join` コマンドを実行するとbuzzが召喚される  
 * ~~うごかない。~~ 動いた。 ~~join後、ずっとランプが点灯してる。~~ 1回喋るとランプが消える。ログイン後一度何か喋らせた方がいいかもね。
+
+## 開発環境
+node-openjtaikをnpmで取得するため、  
+windows環境の場合はmakeコマンドが動作するように下記パッケージをインストールする  
+http://gnuwin32.sourceforge.net/packages/make.htm
