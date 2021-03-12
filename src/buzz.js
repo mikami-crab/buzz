@@ -3,6 +3,11 @@ function connect() {
   window.ipcRenderer.send('asynchronous-liveId', document.getElementById('discordbottoken').value, document.getElementById('texttospeechapikey').value, document.getElementById('youtubeliveid').value);
 }
 
+function sendKansei() {
+  // 各パラメーターをメインスレッドに送信
+  window.ipcRenderer.send('asynchronous-jingle', 'kansei_hakushu1.mp3');
+}
+
 function openFileDialog() {
   let filenames = window.remote.dialog.showOpenDialogSync(null, {
     properties: ['openFile'],
@@ -24,6 +29,10 @@ function openFileDialog() {
   }
 
 }
+
+document.querySelector('#buttonKansei').addEventListener('click', () => {
+  connect()
+});
 
 document.querySelector('#buttonLoad').addEventListener('click', () => {
   connect()

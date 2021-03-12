@@ -17,7 +17,7 @@
     <div class="page-header">
       <h4>BUZZ!!</h4>
     </div>
-    <div class="input-group">
+    <div>
       <form>
         <div class="form-group">
           <label for="discordbottoken">DISCORD Bot Token</label>
@@ -26,7 +26,7 @@
         </div>
         <div class="form-group">
           <label for="texttospeechapikey">GCPの権限ファイルのパス</label>
-          <div class="input-group mb-3">
+          <div class="input-group mb-auto">
             <input type="text" class="form-control" id="texttospeechapikey" placeholder="text to speech api key path">
             <div class="input-group-append">
               <input type="button" id="fileOpen" class="btn open-btn" value="ファイルを選択" />
@@ -40,6 +40,9 @@
         </div>
         <div class="form-group">
           <input type="button" id="buttonLoad" class="btn open-btn" value="START!" />
+        </div>
+        <div class="form-group">
+          <input type="button" id="buttonKansei" class="btn" value="歓声" />
         </div>
         <div class="form-group">
           <textarea id="chatcomment" class="form-control" rows="5"></textarea>

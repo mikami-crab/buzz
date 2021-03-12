@@ -66,9 +66,9 @@ app.on('activate', () => {
     }
 });
 
-function addAudioToQueue(path, voiceChannel) {
+function addAudioToQueue(path, voiceChannel, deleteFlg = true) {
     queue.push(
-        { path: path, voiceChannel: voiceChannel }
+        { path: path, voiceChannel: voiceChannel, deleteFlg :  deleteFlg}
     );
 }
 
@@ -91,12 +91,14 @@ function playAudio() {
         dispatcher.on('finish', () => {
             console.log('playAudio finish');
             // 再生し終わった音声ファイルを削除する
-            fs.unlinkSync(queue[0].path, function(err){
-                if(err){
-                  throw(err);
-                }
-                console.log(`deleted`);
-              });
+            if (queue[0].deleteFlg) {
+                fs.unlinkSync(queue[0].path, function(err){
+                    if(err){
+                      throw(err);
+                    }
+                    console.log(`deleted`);
+                  });
+            }
             queue.shift()
             isPlaying = false;
             playAudio()});
@@ -213,6 +215,12 @@ ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, y
     console.log('asynchronous-liveId_end');
 })
 
+ipcMain.on('asynchronous-jingle', (event, mp3FileName) => {
+    addAudioToQueue(`audio/${mp3FileName}.mp3`, voiceChannel, false);
+    if (!isPlaying) {
+        playAudio();
+    }
+});
 // text to speech
 async function createSpeech(text) {
 
