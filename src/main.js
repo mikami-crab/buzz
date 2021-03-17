@@ -18,13 +18,17 @@ let mainWindow;
 
 const discordClient = new Discord.Client();
 
+const discordClientJingle = new Discord.Client();
+
 let voiceChannel = null;
 let connection = null;
+let connectionJingle = null;
 
-let queue = []
-let isPlaying = false
+let queue = [];
+let isPlaying = false;
+let gcpProjectId = "";
 
-prefix = "/"
+prefix = "/";
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -43,12 +47,14 @@ function createWindow() {
     }));
 
     // 開発ツールを有効化
-//mainWindow.webContents.openDevTools();
+    //mainWindow.webContents.openDevTools();
 
     Menu.setApplicationMenu(null);
 
     mainWindow.on('closed', () => {
         mainWindow = null;
+        connection.disconnect();
+        connectionJingle.disconnect();
     });
 }
 
@@ -68,7 +74,7 @@ app.on('activate', () => {
 
 function addAudioToQueue(path, voiceChannel, deleteFlg = true) {
     queue.push(
-        { path: path, voiceChannel: voiceChannel, deleteFlg :  deleteFlg}
+        { path: path, voiceChannel: voiceChannel, deleteFlg: deleteFlg }
     );
 }
 
@@ -82,26 +88,27 @@ function playAudio() {
     }
 
     // キューが残ってて再生できる状態の場合
-    if (queue.length >= 1 && !isPlaying ) {
+    if (queue.length >= 1 && !isPlaying) {
         isPlaying = true;
         console.log('playAudio play : ' + queue[0].path);
         const dispatcher = connection.play(queue[0].path, {
             volume: 0.5,
-          });
+        });
         dispatcher.on('finish', () => {
             console.log('playAudio finish');
             // 再生し終わった音声ファイルを削除する
             if (queue[0].deleteFlg) {
-                fs.unlinkSync(queue[0].path, function(err){
-                    if(err){
-                      throw(err);
+                fs.unlinkSync(queue[0].path, function (err) {
+                    if (err) {
+                        throw (err);
                     }
                     console.log(`deleted`);
-                  });
+                });
             }
             queue.shift()
             isPlaying = false;
-            playAudio()});
+            playAudio()
+        });
         // queue[0].voiceChannel.join().then(connection => {
         //     console.log('playAudio join then');
         //     const dispatcher = connection.play(queue[0].path);
@@ -123,20 +130,139 @@ function playAudio() {
 }
 
 // UI側からの各パラメーター受信
-ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, youtubeliveid) => {
+ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbottokenjingl, texttospeechapikey, gcpprojectid) => {
 
     process.env.GOOGLE_APPLICATION_CREDENTIALS = texttospeechapikey;
 
     store.set("discord_bot_token", discordbottoken);
+    store.set("discord_bot_token_jingle", discordbottokenjingl);
     store.set("text_to_speech_api_key_path", texttospeechapikey);
+    store.set("gcp_project_id", gcpprojectid);
+
+    gcpProjectId = gcpprojectid;
+
+    discordClient.on("ready", () => {
+        discordClient.user.setPresence({ game: { name: 'Watch your step darling' } });
+        console.log("ready...");
+    });
+
+    // discordのメッセージ受信イベント
+    discordClient.on("message", async message => {
+
+        if (message.author.bot) {
+            // ボットの場合処理を抜ける
+            return;
+        } else {
+            // ボットでは無い場合
+
+            // 発言者が現在いるボイスチャンネルを取得する
+            const authorChannelId = message.member.voice.channel.id
+
+            if (message.user == message.client.user || authorChannelId == null) {
+                return;
+            }
+
+            // buzzコマンド
+            if (message.content.startsWith(prefix)) {
+
+                const input = message.content.replace(prefix, "").split(" ")
+                const command = input[0]
+                const args = input.slice(1);
+
+                if (command === "buzz") {
+                    if (args.length > 0) {
+                        if (args[0] === "join") {
+                            console.log("/buzz join");
+                            connection = await message.member.voice.channel.join();
+                        } else if (args[0] === "shutdown" || args[0] === "exit") {
+                            console.log("/buzz shutdown or exit");
+                            connection.disconnect();
+                            connection = null;
+                        } else if (args[0] === "tran" || args[0] === "translate") {
+                            console.log("/buzz tran or translate");
+                            const sourceLanguageCode = args[1];
+                            const targetLanguageCode = args[2];
+                            const text = args[3];
+
+                            translateText(text, sourceLanguageCode, targetLanguageCode)
+                        }
+                    }
+                }
+
+            } else if (connection != null) {
+                // チャットメッセージから何かを喋らせる予定はない
+                // 何か喋らせたいときはここに追加
+            }
+            return;
+        }
+    }
+    );
+
+    discordClientJingle.on("ready", () => {
+        discordClientJingle.user.setPresence({ game: { name: 'A well well darling' } });
+        console.log("jingle ready...");
+    });
+
+    // discordのメッセージ受信イベント
+    discordClientJingle.on("message", async message => {
+
+        if (message.author.bot) {
+            // ボットの場合処理を抜ける
+            return;
+        } else {
+            // ボットでは無い場合
+
+            // 発言者が現在いるボイスチャンネルを取得する
+            const authorChannelId = message.member.voice.channel.id
+
+            if (message.user == message.client.user || authorChannelId == null) {
+                return;
+            }
+
+            // buzzコマンド
+            if (message.content.startsWith(prefix)) {
+
+                const input = message.content.replace(prefix, "").split(" ")
+                const command = input[0]
+                const args = input.slice(1);
+
+                if (command === "buzz") {
+                    if (args.length > 0) {
+                        if (args[0] === "join") {
+                            console.log("/buzz join");
+                            connectionJingle = await message.member.voice.channel.join();
+                        } else if (args[0] === "shutdown" || args[0] === "exit") {
+                            console.log("/buzz shutdown or exit");
+                            connectionJingle.disconnect();
+                            connectionJingle = null;
+                        }
+                    }
+                }
+
+            } else if (connectionJingle != null) {
+                // チャットメッセージから何かを喋らせる予定はない
+                // 何か喋らせたいときはここに追加
+            }
+            return;
+        }
+    }
+    );
+
+    // discordにログインする
+    discordClient.login(discordbottoken);
+    discordClientJingle.login(discordbottokenjingl);
+});
+
+// UI側からの各パラメーター受信
+ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
 
     const liveChat = new LiveChat({ liveId: youtubeliveid });
-    
+
     // live chat 開始イベント
     liveChat.on('start', (liveId) => {
         console.log('start');
     });
-    
+
     // live chat 終了イベント
     liveChat.on('end', (reason) => {
         console.log('end');
@@ -157,58 +283,6 @@ ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, y
         console.log('error');
     });
 
-    discordClient.on("ready", () => {
-        discordClient.user.setPresence({ game: { name: 'Watch your step darling' } });
-        console.log("ready...");
-    });
-
-    // discordのメッセージ受信イベント
-    discordClient.on("message", async message => {
-        
-        if (message.author.bot) {
-            // ボットの場合処理を抜ける
-            return;
-        } else {
-            // ボットでは無い場合
-
-            // 発言者が現在いるボイスチャンネルを取得する
-            const authorChannelId = message.member.voice.channel.id
-            
-            if (message.user == message.client.user || authorChannelId == null) {
-                return;
-            }
-
-            // buzzコマンド
-            if (message.content.startsWith(prefix)) {
-
-                const input = message.content.replace(prefix, "").split(" ")
-                const command = input[0]
-                const args = input.slice(1);
-
-                if (command === "buzz") {
-                    if (args.length > 0) {
-                        if (args[0] === "join") {
-                            console.log("/buzz join");
-                            connection = await message.member.voice.channel.join();
-                        } else if (args[0] === "shutdown" || args[0] === "exit" )  {
-                            console.log("/buzz shutdown or exit");
-                            connection.disconnect();
-                            connection = null;
-                        }
-                    }
-                }
-
-            } else if (connection != null) {
-                // チャットメッセージから何かを喋らせる予定はない
-                // 何か喋らせたいときはここに追加
-            }
-            return;
-        }
-    }
-    );
-
-    // discordにログインする
-    discordClient.login(discordbottoken);
     // youtube liveに接続する
     liveChat.start();
 
@@ -216,13 +290,18 @@ ipcMain.on('asynchronous-liveId', (event, discordbottoken, texttospeechapikey, y
 })
 
 ipcMain.on('asynchronous-jingle', (event, mp3FileName) => {
-    addAudioToQueue(`audio/${mp3FileName}.mp3`, voiceChannel, false);
-    if (!isPlaying) {
-        playAudio();
-    }
+    console.log('jingle play : ' + mp3FileName);
+    connectionJingle.play(`audio/${mp3FileName}`, {
+        volume: 0.7,
+    });
 });
+
 // text to speech
 async function createSpeech(text) {
+    createSpeech(text, 'ja-JP');
+}
+
+async function createSpeech(text, languageCode) {
 
     if (connection != null) {
         console.log("createSpeech discord connected")
@@ -246,7 +325,7 @@ async function createSpeech(text) {
     //const writeFile = util.promisify(fs.writeFile);
     //await writeFile('output.mp3', response.audioContent, 'binary');
     console.log('Audio content written to file: output.mp3');
-    
+
     var date = new Date();
     var a = date.getTime();
     fs.writeFileSync(
@@ -260,9 +339,43 @@ async function createSpeech(text) {
     }
 }
 
+const { TranslationServiceClient } = require('@google-cloud/translate').v3beta1;
+//const location = 'global';
+const location = 'us-central1';
+
+// Instantiates a client
+const translationClient = new TranslationServiceClient();
+async function translateText(text, sourceLanguageCode, targetLanguageCode) {
+    // Construct request
+    console.log(`gcpProjectId - location: ${gcpProjectId} - ${location}`);
+    const request = {
+        parent: translationClient.locationPath(gcpProjectId, location),
+        contents: [text],
+        mimeType: 'text/plain', // mime types: text/plain, text/html
+        sourceLanguageCode: sourceLanguageCode,
+        targetLanguageCode: targetLanguageCode,
+        model: `projects/${gcpProjectId}/locations/${location}/models/general/base`
+    };
+
+    // Run request
+    const [response] = await translationClient.translateText(request);
+
+    var result = "";
+    for (const translation of response.translations) {
+        console.log(`Translation: ${translation.translatedText}`);
+        result = result + translation.translatedText;
+    }
+
+    return result;
+}
+
 // UI側からの各パラメーター受信
 ipcMain.on('asynchronous-init-param', (event, discordbottoken) => {
-    
+
     // 画面側にチャット内容を送信
-    event.reply('asynchronous-init-param-reply', store.get("discord_bot_token"), store.get("text_to_speech_api_key_path"));
+    event.reply('asynchronous-init-param-reply',
+        store.get("discord_bot_token"),
+        store.get("text_to_speech_api_key_path"),
+        store.get("discord_bot_token_jingle"),
+        store.get("gcp_project_id"));
 });

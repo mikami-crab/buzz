@@ -22,7 +22,17 @@
         <div class="form-group">
           <label for="discordbottoken">DISCORD Bot Token</label>
           <input type="text" class="form-control" id="discordbottoken" placeholder="enter discord bot token" value="">
-          <small id="emailHelp" class="form-text text-muted">DISCORDで作成したBOTのtokenを入力してください</small>
+          <small id="" class="form-text text-muted">DISCORDで作成したBOTのtokenを入力してください</small>
+        </div>
+        <div class="form-group">
+          <label for="discordbottokenjingle">DISCORD Jingle Bot Token</label>
+          <input type="text" class="form-control" id="discordbottokenjingle" placeholder="enter discord jingle bot token" value="">
+          <small id="" class="form-text text-muted">DISCORDで作成したBOTのtoken(jingle)を入力してください</small>
+        </div>
+        <div class="form-group">
+          <label for="gcpprojectid">gcp project id</label>
+          <input type="text" class="form-control" id="gcpprojectid" placeholder="enter gcp project id" value="">
+          <small id="" class="form-text text-muted">gcpのproject idを入力してください</small>
         </div>
         <div class="form-group">
           <label for="texttospeechapikey">GCPの権限ファイルのパス</label>
@@ -34,6 +44,10 @@
           </div>
         </div>
         <div class="form-group">
+          <input type="button" id="buttonDiscordStart" class="btn open-btn" value="DISCORD SERVER起動" />
+        </div>
+        <hr/>
+        <div class="form-group">
           <label for="youtubeliveid">youtubeのライブID</label>
           <input type="text" class="form-control" id='youtubeliveid' placeholder="youtubeLiveId" value="">
           <small id="emailHelp" class="form-text text-muted">https://www.youtube.com/watch?v=xxxx のxxxx部分</small>
@@ -43,6 +57,8 @@
         </div>
         <div class="form-group">
           <input type="button" id="buttonKansei" class="btn" value="歓声" />
+          <input type="button" id="buttonWarai" class="btn" value="笑い" />
+          <input type="button" id="buttonOh" class="btn" value="応！" />
         </div>
         <div class="form-group">
           <textarea id="chatcomment" class="form-control" rows="5"></textarea>
