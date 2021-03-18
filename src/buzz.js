@@ -11,6 +11,30 @@ function discordServerStart() {
   document.getElementById('gcpprojectid').value);
 }
 
+document.querySelector('#buttonOuen').addEventListener('click', () => {
+  sendJingle('donpafu.mp3')
+});
+document.querySelector('#buttonHyoshigi').addEventListener('click', () => {
+  sendJingle('hyoushi3.mp3')
+});
+document.querySelector('#buttonKeihou').addEventListener('click', () => {
+  sendJingle('keihou.mp3')
+});
+document.querySelector('#buttonBirasurappu').addEventListener('click', () => {
+  sendJingle('birasurappu.mp3')
+});
+document.querySelector('#buttonWadaiko').addEventListener('click', () => {
+  sendJingle('wadaiko.mp3')
+});
+document.querySelector('#buttonMondai').addEventListener('click', () => {
+  sendJingle('deden.mp3')
+});
+document.querySelector('#buttonSeikai').addEventListener('click', () => {
+  sendJingle('pinpon.mp3')
+});
+document.querySelector('#buttonHazure').addEventListener('click', () => {
+  sendJingle('bubu.mp3')
+});
 document.querySelector('#buttonKansei').addEventListener('click', () => {
   sendJingle('kansei_hakushu1.mp3')
 });

@@ -183,8 +183,13 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                             const sourceLanguageCode = args[1];
                             const targetLanguageCode = args[2];
                             const text = args[3];
-
-                            translateText(text, sourceLanguageCode, targetLanguageCode)
+                            const honyaku = translateTextBasic(text, targetLanguageCode);
+                            honyaku.then(function(result1) {
+                                createSpeech(text, sourceLanguageCode);
+                                createSpeech(result1, targetLanguageCode);
+                                message.reply(result1);
+                            })
+                            // translateText(text, sourceLanguageCode, targetLanguageCode);
                         }
                     }
                 }
@@ -314,7 +319,7 @@ async function createSpeech(text, languageCode) {
     const request = {
         input: { text: text },
         // Select the language and SSML voice gender (optional)
-        voice: { languageCode: 'ja-JP', ssmlGender: 'NEUTRAL' },
+        voice: { languageCode: languageCode, ssmlGender: 'NEUTRAL' },
         // select the type of audio encoding
         audioConfig: { audioEncoding: 'MP3' },
     };
@@ -339,9 +344,35 @@ async function createSpeech(text, languageCode) {
     }
 }
 
-const { TranslationServiceClient } = require('@google-cloud/translate').v3beta1;
-//const location = 'global';
-const location = 'us-central1';
+
+
+// Imports the Google Cloud client library
+const {Translate} = require('@google-cloud/translate').v2;
+
+// Creates a client
+const translateBasic = new Translate();
+
+// async function translateTextBasic(text, target) {
+async function translateTextBasic(text, target) {
+    // Translates the text into the target language. "text" can be a string for
+    // translating a single piece of text, or an array of strings for translating
+    // multiple texts.
+    //let [translations] = await translateBasic.translate(text, target);
+    console.log(`text - target: ${text} - ${target}`);
+    let [translations] = await translateBasic.translate(text, target);
+    translations = Array.isArray(translations) ? translations : [translations];
+    let result = "";
+    translations.forEach((translation, i) => {
+        result = result + `${translation}`;
+      //console.log(`${text[i]} => (${target}) ${translation}`);
+    });
+    console.log(result);
+    return result;
+  }
+
+const { TranslationServiceClient } = require('@google-cloud/translate');
+const location = 'global';
+//const location = 'us-central1';
 
 // Instantiates a client
 const translationClient = new TranslationServiceClient();
@@ -349,22 +380,31 @@ async function translateText(text, sourceLanguageCode, targetLanguageCode) {
     // Construct request
     console.log(`gcpProjectId - location: ${gcpProjectId} - ${location}`);
     const request = {
-        parent: translationClient.locationPath(gcpProjectId, location),
+        parent: `projects/${gcpProjectId}/locations/${location}`,
         contents: [text],
         mimeType: 'text/plain', // mime types: text/plain, text/html
         sourceLanguageCode: sourceLanguageCode,
         targetLanguageCode: targetLanguageCode,
-        model: `projects/${gcpProjectId}/locations/${location}/models/general/base`
+        //model: `projects/${gcpProjectId}/locations/${location}/models/general/base`
     };
-
-    // Run request
-    const [response] = await translationClient.translateText(request);
-
+    
     var result = "";
-    for (const translation of response.translations) {
-        console.log(`Translation: ${translation.translatedText}`);
-        result = result + translation.translatedText;
-    }
+
+    try {
+        // Run request
+        const [response] = await translationClient.translateText(request);
+
+        for (const translation of response.translations) {
+            console.log(`Translation: ${translation.translatedText}`);
+            result = result + translation.translatedText;
+        }
+    
+        for (const translation of response.translations) {
+          console.log(`Translation: ${translation.translatedText}`);
+        }
+      } catch (error) {
+        console.error(error.details);
+      }
 
     return result;
 }
