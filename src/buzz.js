@@ -15,7 +15,7 @@ document.querySelector('#buttonOuen').addEventListener('click', () => {
   sendJingle('donpafu.mp3')
 });
 document.querySelector('#buttonHyoshigi').addEventListener('click', () => {
-  sendJingle('hyoushi3.mp3')
+  sendJingle('hyoushi.mp3')
 });
 document.querySelector('#buttonKeihou').addEventListener('click', () => {
   sendJingle('keihou.mp3')
@@ -36,11 +36,11 @@ document.querySelector('#buttonHazure').addEventListener('click', () => {
   sendJingle('bubu.mp3')
 });
 document.querySelector('#buttonKansei').addEventListener('click', () => {
-  sendJingle('kansei_hakushu1.mp3')
+  sendJingle('kansei_hakushu.mp3')
 });
 
 document.querySelector('#buttonWarai').addEventListener('click', () => {
-  sendJingle('warai2.mp3')
+  sendJingle('warai.mp3')
 });
 
 document.querySelector('#buttonOh').addEventListener('click', () => {

@@ -53,8 +53,12 @@ function createWindow() {
 
     mainWindow.on('closed', () => {
         mainWindow = null;
-        connection.disconnect();
-        connectionJingle.disconnect();
+        if (connection != null) {
+            connection.disconnect();
+        }
+        if (connectionJingle != null) {
+            connectionJingle.disconnect();
+        }
     });
 }
 
@@ -190,6 +194,8 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                                 message.reply(result1);
                             })
                             // translateText(text, sourceLanguageCode, targetLanguageCode);
+                        } else {
+                            buzzCommand(args);
                         }
                     }
                 }
@@ -258,6 +264,34 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
     discordClientJingle.login(discordbottokenjingl);
 });
 
+// バズコマンド処理
+function buzzCommand(args) {
+    if (args[0] === "tran" || args[0] === "translate") {
+        console.log("/buzz tran or translate");
+        const sourceLanguageCode = args[1];
+        const targetLanguageCode = args[2];
+        const text = args[3];
+        const honyaku = translateTextBasic(text, targetLanguageCode);
+        honyaku.then(function(result1) {
+            createSpeech(text, sourceLanguageCode);
+            createSpeech(result1, targetLanguageCode);
+            message.reply(result1);
+        })
+    } else if (args[0] === "speak") {
+        console.log("/buzz speak");
+        const languageCode = args[1];
+        const text = args[2];
+        createSpeech(text, languageCode);
+    } else if (args[0] === "jingle") {
+        console.log("/buzz jingle");
+        const mp3FileName = args[1];
+        console.log('jingle play : ' + mp3FileName);
+        connectionJingle.play(`audio/${mp3FileName}`, {
+            volume: 0.7,
+        });
+    }
+}
+
 // UI側からの各パラメーター受信
 ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
 
@@ -275,12 +309,21 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
 
     // live chat コメント取得イベント
     liveChat.on('comment', (comment) => {
-        var messageaaa = comment.author.name + 'さん, ';
-        comment.message.forEach(element => messageaaa += element.text);
+        var messageText = '';
+        comment.message.forEach(element => messageText += element.text);
         // 画面側にチャット内容を送信
-        event.reply('asynchronous-liveId-reply', messageaaa);
-        //
-        createSpeech(messageaaa);
+        event.reply('asynchronous-liveId-reply', comment.author.name + 'さん, ' + messageText);
+
+        const input = messageText.replace(prefix, "").split(" ")
+        const command = input[0]
+        const args = input.slice(1);
+
+        if (command === "buzz") {
+            buzzCommand(args);
+        } else {
+            // 
+            createSpeech(comment.author.name + 'さん, ' + messageText);
+        }
     });
 
     // live chat エラーイベント
