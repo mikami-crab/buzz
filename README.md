@@ -1,4 +1,5 @@
-# buzz -弱小youtuber向けアプリ-
+# BUZZ!!  
+弱小youtuber向けアプリ
 
 ## こまんど　はう・とぅ・ゆーず  
 
@@ -19,6 +20,28 @@ https://cloud.google.com/translate/docs/languages?hl=ja
 例:日本語から台湾語に翻訳したい場合  
 `/buzz tran ja zh-TW こんにちは`
 コマンド実行後、翻訳した言葉がリプライされます。
+
+### 話す  
+指定した言語の言葉をDISCORD上で喋らせることができます
+
+`/buzz speak [言語コード] [テキスト]`  
+
+※言語コードはISO-639-1。詳細は以下のURLを参照してください。  
+https://cloud.google.com/translate/docs/languages?hl=ja
+
+例:日本語から台湾語に翻訳したい場合  
+`/buzz tran en oppai no perapera source`
+
+### ジングル  
+ジングルを鳴らします
+
+`/buzz jingle [mp3ファイル名]`  
+
+※ファイル名は以下を参照してください。  
+https://github.com/shun178/buzz/tree/main/audio
+
+例:笑い声を鳴らしたい場合  
+`/buzz jingle warai.mp3`
 
 ## 開発環境とか
 
