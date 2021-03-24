@@ -10,7 +10,7 @@
 `/buzz shutdown`
 
 ### 翻訳  
-翻訳前と翻訳後の言葉をDISCORD上で喋らせることができます
+翻訳前と翻訳後のテキストをDISCORD上で喋らせます
 
 `/buzz tran [ソース言語コード] [ターゲット言語コード] [テキスト]`  
 
@@ -22,7 +22,7 @@ https://cloud.google.com/translate/docs/languages?hl=ja
 コマンド実行後、翻訳した言葉がリプライされます。
 
 ### 話す  
-指定した言語の言葉をDISCORD上で喋らせることができます
+指定した言語のテキストをDISCORD上で喋らせます
 
 `/buzz speak [言語コード] [テキスト]`  
 
