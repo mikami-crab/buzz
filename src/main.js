@@ -301,11 +301,23 @@ function buzzCommand(args) {
         createSpeech("tsuyoi", "en");
     } else if (args[0] == "welcome") {
         createSpeech("welcome", "en");
+    } else if (args[0] == "youkoso") {
+        createSpeech("yoh-koso", "en");
     } else if (args[0] == "thankyou") {
         createSpeech("thank you", "en");
     } else if (args[0] == "arigato") {
         createSpeech("ari-ga-toh", "en");
-    }
+    } else if (args[0] == "iscrazy") {
+        createSpeech("is crazy", "en");
+    } else if (args[0] == "ispretty") {
+        createSpeech("is pretty", "en");
+    } else if (args[0] == "isbeautiful") {
+        createSpeech("is beautiful", "en");
+    } else if (args[0] == "isfabulous") {
+        createSpeech("is fabulous", "en");
+    }  else if (args[0] == "ismarvelous") {
+        createSpeech("is marvelous", "en");
+    } 
     //
     else if (args[0] == "anesan") {
         createSpeech("a-Ne saan", "en");
@@ -331,6 +343,16 @@ function buzzCommand(args) {
         createSpeech("fumei chan", "en");
     } else if (args[0] == "mokasan") {
         createSpeech("moka saan", "en");
+    }
+    //
+    else if (args[0] == "kuroaya") {
+        createSpeech("kuro-aya", "en");
+    }
+    else if (args[0] == "mochiduki") {
+        createSpeech("mochizuki saan", "en");
+    }
+    else if (args[0] == "yoyo") {
+        createSpeech("yoh yoh saan", "en");
     }
     console.log("buzzCommand end");
 }

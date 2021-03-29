@@ -57,6 +57,18 @@ document.querySelector('#buttonMokasan').addEventListener('click', () => {
   // 
   sendBuzzCommand('mokasan')
 });
+document.querySelector('#buttonKuroaya').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('kuroaya')
+});
+document.querySelector('#buttonMochiduki').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('mochiduki')
+});
+document.querySelector('#buttonYoyo').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('yoyo')
+});
 
 // おしゃべり
 document.querySelector('#buttonNg').addEventListener('click', () => {
@@ -90,6 +102,35 @@ document.querySelector('#buttonThankyou').addEventListener('click', () => {
 document.querySelector('#buttonArigato').addEventListener('click', () => {
   // 
   sendBuzzCommand('arigato')
+});
+document.querySelector('#buttonWelcome').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('welcome')
+});
+document.querySelector('#buttonYoukoso').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('youkoso')
+});
+
+document.querySelector('#buttoniscrazy').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('iscrazy')
+});
+document.querySelector('#buttonispretty').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('ispretty')
+});
+document.querySelector('#buttonisbeautiful').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('isbeautiful')
+});
+document.querySelector('#buttonismarvelous').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('ismarvelous')
+});
+document.querySelector('#buttonisfabulous').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('isfabulous')
 });
 
 document.querySelector('#buttonOuen').addEventListener('click', () => {
