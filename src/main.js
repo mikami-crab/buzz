@@ -76,9 +76,9 @@ app.on('activate', () => {
     }
 });
 
-function addAudioToQueue(path, voiceChannel, deleteFlg = true) {
+function addAudioToQueue(path, voiceChannel, deleteFlg = true, file = null) {
     queue.push(
-        { path: path, voiceChannel: voiceChannel, deleteFlg: deleteFlg }
+        { path: path, voiceChannel: voiceChannel, deleteFlg: deleteFlg, file: file }
     );
 }
 
@@ -94,6 +94,12 @@ function playAudio() {
     // キューが残ってて再生できる状態の場合
     if (queue.length >= 1 && !isPlaying) {
         isPlaying = true;
+        // if (queue[0].file != null) {
+        //     const dispatcher = connection.play(queue[0].file, {
+        //         volume: 0.5,
+        //     });
+        // }
+        
         console.log('playAudio play : ' + queue[0].path);
         const dispatcher = connection.play(queue[0].path, {
             volume: 0.5,
@@ -106,30 +112,13 @@ function playAudio() {
                     if (err) {
                         throw (err);
                     }
-                    console.log(`deleted`);
                 });
+                console.log(`playAudio mp3 deleted`);
             }
             queue.shift()
             isPlaying = false;
             playAudio()
         });
-        // queue[0].voiceChannel.join().then(connection => {
-        //     console.log('playAudio join then');
-        //     const dispatcher = connection.play(queue[0].path);
-        //     dispatcher.on('finish', () => {
-        //         console.log('playAudio finish');
-        //         // 再生し終わった音声ファイルを削除する
-        //         fs.unlink(queue[0].path, function(err){
-        //             if(err){
-        //               throw(err);
-        //             }
-        //             console.log(`deleted`);
-        //           });
-        //         queue.shift()
-        //         playAudio()
-        //         isPlaying = true
-        //     })
-        // })
     }
 }
 
@@ -141,7 +130,7 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
     store.set("discord_bot_token", discordbottoken);
     store.set("discord_bot_token_jingle", discordbottokenjingl);
     store.set("text_to_speech_api_key_path", texttospeechapikey);
-    store.set("gcp_project_id", gcpprojectid);
+    store.set("gcp_project_id", gcpprojectid); // AutoML未使用。使っていない。
 
     gcpProjectId = gcpprojectid;
 
@@ -178,6 +167,7 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                         if (args[0] === "join") {
                             console.log("/buzz join");
                             connection = await message.member.voice.channel.join();
+                            createSpeech("BUZZ has started", "en");
                         } else if (args[0] === "shutdown" || args[0] === "exit") {
                             console.log("/buzz shutdown or exit");
                             connection.disconnect();
@@ -188,7 +178,7 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                             const targetLanguageCode = args[2];
                             const text = args[3];
                             const honyaku = translateTextBasic(text, targetLanguageCode);
-                            honyaku.then(function(result1) {
+                            honyaku.then(function (result1) {
                                 createSpeech(text, sourceLanguageCode);
                                 createSpeech(result1, targetLanguageCode);
                                 message.reply(result1);
@@ -242,6 +232,9 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                         if (args[0] === "join") {
                             console.log("/buzz join");
                             connectionJingle = await message.member.voice.channel.join();
+                            connectionJingle.play(`audio/kansei_hakushu.mp3`, {
+                                volume: 0.5,
+                            });
                         } else if (args[0] === "shutdown" || args[0] === "exit") {
                             console.log("/buzz shutdown or exit");
                             connectionJingle.disconnect();
@@ -266,30 +259,80 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
 
 // バズコマンド処理
 function buzzCommand(args) {
-    if (args[0] === "tran" || args[0] === "translate") {
+    console.log("buzzCommand start : " + args[0]);
+    if (args[0] == "tran" || args[0] == "translate") {
         console.log("/buzz tran or translate");
         const sourceLanguageCode = args[1];
         const targetLanguageCode = args[2];
-        const text = args[3];
+        const text = args.slice(3).join(" ");
         const honyaku = translateTextBasic(text, targetLanguageCode);
-        honyaku.then(function(result1) {
+        honyaku.then(function (result1) {
             createSpeech(text, sourceLanguageCode);
             createSpeech(result1, targetLanguageCode);
             message.reply(result1);
         })
-    } else if (args[0] === "speak") {
+    } else if (args[0] == "speak" || args[0] == "tts") {
         console.log("/buzz speak");
         const languageCode = args[1];
-        const text = args[2];
+        const text = args.slice(2).join(" ");;
         createSpeech(text, languageCode);
-    } else if (args[0] === "jingle") {
+    } else if (args[0] == "jingle") {
         console.log("/buzz jingle");
         const mp3FileName = args[1];
         console.log('jingle play : ' + mp3FileName);
         connectionJingle.play(`audio/${mp3FileName}`, {
-            volume: 0.7,
+            volume: 0.5,
         });
+    } else if (args[0] == "ng") {
+        createSpeech("nice Gandhi", "en");
+    } else if (args[0] == "tm") {
+        createSpeech("tamani mendy", "en");
+    } else if (args[0] == "km") {
+        createSpeech("kanojo wa itsumo milk tea", "en");
+    } else if (args[0] == "ngtm") {
+        createSpeech("nice Gandhi, tamani mendy", "en");
+    } else if (args[0] == "ngtmkm") {
+        createSpeech("nice Gandhi, tamani mendy, kanojo wa itsumo milk tea", "en");
+    } else if (args[0] == "ops") {
+        createSpeech("oppai no perapera source", "en");
+    } else if (args[0] == "kl") {
+        createSpeech("kill leader", "en");
+    } else if (args[0] == "tsuyoi") {
+        createSpeech("tsuyoi", "en");
+    } else if (args[0] == "welcome") {
+        createSpeech("welcome", "en");
+    } else if (args[0] == "thankyou") {
+        createSpeech("thank you", "en");
+    } else if (args[0] == "arigato") {
+        createSpeech("ari-ga-toh", "en");
     }
+    //
+    else if (args[0] == "anesan") {
+        createSpeech("a-Ne saan", "en");
+    } else if (args[0] == "tsukimisan") {
+        createSpeech("tsukimi saan", "en");
+    } else if (args[0] == "shocho") {
+        createSpeech("shochoh", "en");
+    } else if (args[0] == "uyatsan") {
+        createSpeech("u-yat saan", "en");
+    } else if (args[0] == "mikamilion") {
+        createSpeech("mikami lion", "en");
+    } else if (args[0] == "oyakata") {
+        createSpeech("oyakata", "en");
+    } else if (args[0] == "taisho") {
+        createSpeech("udon taisho", "en");
+    } else if (args[0] == "bittonsan") {
+        createSpeech("bit-ton saan", "en");
+    } else if (args[0] == "komachan") {
+        createSpeech("koma chan", "en");
+    } else if (args[0] == "kaba") {
+        createSpeech("kaba-da-chon saan", "en");
+    } else if (args[0] == "fumeichan") {
+        createSpeech("fumei chan", "en");
+    } else if (args[0] == "mokasan") {
+        createSpeech("moka saan", "en");
+    }
+    console.log("buzzCommand end");
 }
 
 // UI側からの各パラメーター受信
@@ -322,7 +365,7 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
             buzzCommand(args);
         } else {
             // 
-            createSpeech(comment.author.name + 'さん, ' + messageText);
+            createSpeech(comment.author.name + 'さん, ' + messageText, "ja");
         }
     });
 
@@ -337,17 +380,17 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
     console.log('asynchronous-liveId_end');
 })
 
+ipcMain.on('asynchronous-buzz-command', (event, commandText) => {
+    const args = commandText.replace(prefix, "").split(" ")
+    buzzCommand(args);
+});
+
 ipcMain.on('asynchronous-jingle', (event, mp3FileName) => {
     console.log('jingle play : ' + mp3FileName);
     connectionJingle.play(`audio/${mp3FileName}`, {
-        volume: 0.7,
+        volume: 0.5,
     });
 });
-
-// text to speech
-async function createSpeech(text) {
-    createSpeech(text, 'ja-JP');
-}
 
 async function createSpeech(text, languageCode) {
 
@@ -380,7 +423,8 @@ async function createSpeech(text, languageCode) {
         `audio/${a}.mp3`,
         response.audioContent
     );
-    addAudioToQueue(`audio/${a}.mp3`, voiceChannel)
+
+    addAudioToQueue(`audio/${a}.mp3`, voiceChannel, true, response.audioContent);
 
     if (!isPlaying) {
         playAudio()
@@ -390,7 +434,7 @@ async function createSpeech(text, languageCode) {
 
 
 // Imports the Google Cloud client library
-const {Translate} = require('@google-cloud/translate').v2;
+const { Translate } = require('@google-cloud/translate').v2;
 
 // Creates a client
 const translateBasic = new Translate();
@@ -407,16 +451,17 @@ async function translateTextBasic(text, target) {
     let result = "";
     translations.forEach((translation, i) => {
         result = result + `${translation}`;
-      //console.log(`${text[i]} => (${target}) ${translation}`);
+        //console.log(`${text[i]} => (${target}) ${translation}`);
     });
     console.log(result);
     return result;
-  }
+}
 
 const { TranslationServiceClient } = require('@google-cloud/translate');
 const location = 'global';
 //const location = 'us-central1';
 
+// 未使用
 // Instantiates a client
 const translationClient = new TranslationServiceClient();
 async function translateText(text, sourceLanguageCode, targetLanguageCode) {
@@ -430,7 +475,7 @@ async function translateText(text, sourceLanguageCode, targetLanguageCode) {
         targetLanguageCode: targetLanguageCode,
         //model: `projects/${gcpProjectId}/locations/${location}/models/general/base`
     };
-    
+
     var result = "";
 
     try {
@@ -441,13 +486,13 @@ async function translateText(text, sourceLanguageCode, targetLanguageCode) {
             console.log(`Translation: ${translation.translatedText}`);
             result = result + translation.translatedText;
         }
-    
+
         for (const translation of response.translations) {
-          console.log(`Translation: ${translation.translatedText}`);
+            console.log(`Translation: ${translation.translatedText}`);
         }
-      } catch (error) {
+    } catch (error) {
         console.error(error.details);
-      }
+    }
 
     return result;
 }

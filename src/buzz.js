@@ -11,6 +11,87 @@ function discordServerStart() {
   document.getElementById('gcpprojectid').value);
 }
 
+// 人名
+
+document.querySelector('#buttonShocho').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('shocho')
+});
+document.querySelector('#buttonUyat').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('uyatsan')
+});
+document.querySelector('#buttonAnesan').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('anesan')
+});
+document.querySelector('#buttonTsukimi').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('tsukimisan')
+});
+document.querySelector('#buttonBitton').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('bittonsan')
+});
+document.querySelector('#buttonKomachan').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('komachan')
+});
+document.querySelector('#buttonOyakata').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('oyakata')
+});
+document.querySelector('#buttonKabadachon').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('kaba')
+});
+document.querySelector('#buttonTaisho').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('taisho')
+});
+document.querySelector('#buttonFumeichan').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('fumeichan')
+});
+document.querySelector('#buttonMokasan').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('mokasan')
+});
+
+// おしゃべり
+document.querySelector('#buttonNg').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('ng')
+});
+document.querySelector('#buttonTm').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('tm')
+});
+document.querySelector('#buttonKm').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('km')
+});
+document.querySelector('#buttonNgTmKm').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('ngtmkm')
+});
+document.querySelector('#buttonKl').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('kl')
+});
+document.querySelector('#buttonTsuyoi').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('tsuyoi')
+});
+document.querySelector('#buttonThankyou').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('thankyou')
+});
+document.querySelector('#buttonArigato').addEventListener('click', () => {
+  // 
+  sendBuzzCommand('arigato')
+});
+
 document.querySelector('#buttonOuen').addEventListener('click', () => {
   sendJingle('donpafu.mp3')
 });
@@ -46,6 +127,11 @@ document.querySelector('#buttonWarai').addEventListener('click', () => {
 document.querySelector('#buttonOh').addEventListener('click', () => {
   sendJingle('oh.mp3')
 });
+
+function sendBuzzCommand(commandText) {
+  // 各パラメーターをメインスレッドに送信
+  window.ipcRenderer.send('asynchronous-buzz-command', commandText);
+}
 
 function sendJingle(mp3Name) {
   // 各パラメーターをメインスレッドに送信

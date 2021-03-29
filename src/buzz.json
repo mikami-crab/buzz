@@ -1,0 +1,9 @@
+{
+    "button_action": [
+        {
+            "command_name" : "shocho",
+            "command" : "shocho",
+            "name" : "所長"
+        }
+    ]
+}
