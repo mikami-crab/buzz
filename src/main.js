@@ -99,7 +99,7 @@ function playAudio() {
         //         volume: 0.5,
         //     });
         // }
-        
+
         console.log('playAudio play : ' + queue[0].path);
         const dispatcher = connection.play(queue[0].path, {
             volume: 0.5,
@@ -274,8 +274,15 @@ function buzzCommand(args) {
     } else if (args[0] == "speak" || args[0] == "tts") {
         console.log("/buzz speak");
         const languageCode = args[1];
-        const text = args.slice(2).join(" ");;
+        const text = args.slice(2).join(" ");
         createSpeech(text, languageCode);
+    } else if (args[0] == "dice") {
+        console.log("/buzz dice");
+        const members = args[1].split(',');
+
+        const memberIndex = Math.floor(Math.random() * members.length);
+
+        createSpeech(members.join(" ") + "で抽選します。考え中……考え中……考え中……。選ばれたのは" + members[memberIndex] + "です。", "ja");
     } else if (args[0] == "jingle") {
         console.log("/buzz jingle");
         const mp3FileName = args[1];
@@ -315,9 +322,9 @@ function buzzCommand(args) {
         createSpeech("is beautiful", "en");
     } else if (args[0] == "isfabulous") {
         createSpeech("is fabulous", "en");
-    }  else if (args[0] == "ismarvelous") {
+    } else if (args[0] == "ismarvelous") {
         createSpeech("is marvelous", "en");
-    } 
+    }
     //
     else if (args[0] == "anesan") {
         createSpeech("a-Ne saan", "en");
