@@ -36,7 +36,8 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: false,
             preload: `${__dirname}/preload.js`,
-            enableRemoteModule: true
+            enableRemoteModule: true,
+            nativeWindowOpen: true 
         }, width: 800, height: 600
     });
 
@@ -269,7 +270,7 @@ function buzzCommand(args) {
         honyaku.then(function (result1) {
             createSpeech(text, sourceLanguageCode);
             createSpeech(result1, targetLanguageCode);
-            message.reply(result1);
+            //message.reply(result1);
         })
     } else if (args[0] == "speak" || args[0] == "tts") {
         console.log("/buzz speak");
@@ -393,8 +394,16 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
         if (command === "buzz") {
             buzzCommand(args);
         } else {
-            // 
-            createSpeech(comment.author.name + 'さん, ' + messageText, "ja");
+            if (messageText.match(/^[\x20-\x7e]*$/)) {
+                const honyaku = translateTextBasic(messageText, "ja");
+                honyaku.then(function (result1) {
+                    createSpeech(comment.author.name + 'さん', "ja");
+                    createSpeech(messageText, "en");
+                    createSpeech(result1, "ja");
+                })
+            } else {
+                createSpeech(comment.author.name + 'さん, ' + messageText, "ja");
+            }
         }
     });
 
@@ -421,6 +430,44 @@ ipcMain.on('asynchronous-jingle', (event, mp3FileName) => {
     });
 });
 
+async function createSpeech2(text, languageCode, name) {
+    
+    if (connection != null) {
+        console.log("createSpeech discord connected")
+    } else {
+        console.log("createSpeech discord disconnected, skip text-to-speech")
+        return;
+    }
+
+    // Construct the request
+    const request = {
+        input: { text: text },
+        // Select the language and SSML voice gender (optional)
+        voice: { languageCode: languageCode,name: name, ssmlGender: 'NEUTRAL' },
+        // select the type of audio encoding
+        audioConfig: { audioEncoding: 'MP3' },
+    };
+
+    // Performs the text-to-speech request
+    const [response] = await textToSpeechClient.synthesizeSpeech(request);
+    // Write the binary audio content to a local file
+    //const writeFile = util.promisify(fs.writeFile);
+    //await writeFile('output.mp3', response.audioContent, 'binary');
+    console.log('Audio content written to file: output.mp3');
+
+    var date = new Date();
+    var a = date.getTime();
+    fs.writeFileSync(
+        `audio/${a}.mp3`,
+        response.audioContent
+    );
+
+    addAudioToQueue(`audio/${a}.mp3`, voiceChannel, true, response.audioContent);
+
+    if (!isPlaying) {
+        playAudio()
+    }
+}
 async function createSpeech(text, languageCode) {
 
     if (connection != null) {

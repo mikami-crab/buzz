@@ -2,7 +2,7 @@
   "name": "buzz",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "./src/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,7 +11,9 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^12.19.16",
-    "electron": "^11.2.3",
+    "electron": "^14.0.0",
+    "electron-builder": "^22.14.5",
+    "electron-packager": "^15.3.0",
     "ts-node": "^9.1.1",
     "typescript": "^4.1.5",
     "webpack": "^5.23.0",
