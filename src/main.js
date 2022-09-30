@@ -394,6 +394,7 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
         if (command === "buzz") {
             buzzCommand(args);
         } else {
+            // 英語の場合
             if (messageText.match(/^[\x20-\x7e]*$/)) {
                 const honyaku = translateTextBasic(messageText, "ja");
                 honyaku.then(function (result1) {
@@ -401,8 +402,22 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
                     createSpeech(messageText, "en");
                     createSpeech(result1, "ja");
                 })
+            // 中国語の場合
+            } else if (messageText.match(/^[一-龥]*$/)) {
+                const honyaku = translateTextBasic(messageText, "ja");
+                honyaku.then(function (result1) {
+                    createSpeech(comment.author.name + 'さん', "ja");
+                    createSpeech(messageText, "zh_CN");
+                    createSpeech(result1, "ja");
+                })
             } else {
-                createSpeech(comment.author.name + 'さん, ' + messageText, "ja");
+                const wavenetName = "ja-JP-Wavenet-D";
+                if (comment.author.name == "ayaka") {
+                    wavenetName = "ja-JP-Wavenet-B";
+                } else if (comment.author.name == "お母さん") {
+                    wavenetName = "ja-JP-Wavenet-C";
+                }
+                createSpeech(comment.author.name + 'さん, ' + messageText, "ja", wavenetName);
             }
         }
     });
@@ -468,7 +483,7 @@ async function createSpeech2(text, languageCode, name) {
         playAudio()
     }
 }
-async function createSpeech(text, languageCode) {
+async function createSpeech(text, languageCode, name = "") {
 
     if (connection != null) {
         console.log("createSpeech discord connected")
@@ -477,11 +492,15 @@ async function createSpeech(text, languageCode) {
         return;
     }
 
+    if (languageCode == "ja-JP") {
+
+    }
+
     // Construct the request
     const request = {
         input: { text: text },
         // Select the language and SSML voice gender (optional)
-        voice: { languageCode: languageCode, ssmlGender: 'NEUTRAL' },
+        voice: { languageCode: languageCode, ssmlGender: 'NEUTRAL', name: name },
         // select the type of audio encoding
         audioConfig: { audioEncoding: 'MP3' },
     };
