@@ -1,6 +1,6 @@
 # BUZZ!!
 
-弱小 youtuber 向けアプリ
+弱小 youtuber 向けyoutubeコメントをdiscord経由で読み上げるアプリ
 
 ## アプリ起動
 
@@ -40,6 +40,16 @@ https://cloud.google.com/translate/docs/languages?hl=ja
 
 例:英語で読み上げる場合  
 `/buzz tran en oppai no perapera source`
+
+### サイコロ転がす
+
+何かを選びたいときに使います。
+選びたい文字列をカンマ区切りでつないでください。
+
+`/buzz dice [選びたい文字(カンマ区切り)]`
+
+例:晩御飯をラーメン,カレー,牛丼の中から選ぶ場合  
+`/buzz dice ラーメン,カレー,牛丼`
 
 ### ジングル
 
