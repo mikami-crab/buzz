@@ -1,3 +1,7 @@
+const { 
+    joinVoiceChannel, entersState, VoiceConnectionStatus, createAudioResource, StreamType, createAudioPlayer, AudioPlayerStatus, NoSubscriberBehavior, generateDependencyReport  
+} = require("@discordjs/voice");
+console.log(generateDependencyReport());
 const LiveChat = require('youtube-chat').LiveChat;
 const { app, Menu, BrowserWindow } = require('electron');
 const { ipcMain } = require('electron');
@@ -6,7 +10,8 @@ const url = require('url');
 const textToSpeech = require('@google-cloud/text-to-speech');
 const fs = require('fs');
 const util = require('util');
-const Discord = require('discord.js');
+//const Discord = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 
 const Store = require('electron-store');
 const store = new Store();
@@ -16,15 +21,23 @@ const textToSpeechClient = new textToSpeech.TextToSpeechClient();
 
 let mainWindow;
 
-const discordClient = new Discord.Client();
+const discordClient = new Client({
+	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages]
+});
 
-const discordClientJingle = new Discord.Client();
+const discordClientJingle = new Client({
+	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages]
+});
 
 let voiceChannel = null;
-let connection = null;
-let connectionJingle = null;
 
-let queue = [];
+let connection = null;
+let player = null;
+
+let connectionJingle = null;
+let playerJingle = null;
+
+let buzzPlayQueue = [];
 let isPlaying = false;
 let gcpProjectId = "";
 
@@ -78,7 +91,7 @@ app.on('activate', () => {
 });
 
 function addAudioToQueue(path, voiceChannel, deleteFlg = true, file = null) {
-    queue.push(
+    buzzPlayQueue.push(
         { path: path, voiceChannel: voiceChannel, deleteFlg: deleteFlg, file: file }
     );
 }
@@ -87,13 +100,13 @@ function playAudio() {
     console.log('playAudio start');
 
     // キューがないなら何もしない
-    if (queue.length == 0) {
+    if (buzzPlayQueue.length == 0) {
         console.log('playAudio no queue');
         return;
     }
 
     // キューが残ってて再生できる状態の場合
-    if (queue.length >= 1 && !isPlaying) {
+    if (buzzPlayQueue.length >= 1 && !isPlaying) {
         isPlaying = true;
         // if (queue[0].file != null) {
         //     const dispatcher = connection.play(queue[0].file, {
@@ -101,25 +114,53 @@ function playAudio() {
         //     });
         // }
 
-        console.log('playAudio play : ' + queue[0].path);
-        const dispatcher = connection.play(queue[0].path, {
-            volume: 0.5,
+        console.log('playAudio play : ' + buzzPlayQueue[0].path);
+        
+        const resource = createAudioResource(buzzPlayQueue[0].path,
+        {
+          inputType: StreamType.Arbitrary,
+          inlineVolume: true,
         });
-        dispatcher.on('finish', () => {
+        resource.volume.setVolume(0.5);
+        player.play(resource);
+        player.on(AudioPlayerStatus.Idle, () => {
             console.log('playAudio finish');
             // 再生し終わった音声ファイルを削除する
-            if (queue[0].deleteFlg) {
-                fs.unlinkSync(queue[0].path, function (err) {
+            if (buzzPlayQueue.length <= 0) {
+                return;
+            }
+            if (buzzPlayQueue[0].deleteFlg) {
+                fs.unlinkSync(buzzPlayQueue[0].path, function (err) {
                     if (err) {
                         throw (err);
                     }
                 });
                 console.log(`playAudio mp3 deleted`);
             }
-            queue.shift()
+            buzzPlayQueue.shift()
             isPlaying = false;
             playAudio()
         });
+
+
+        // const dispatcher = connection.play(queue[0].path, {
+        //     volume: 0.5,
+        // });
+        // dispatcher.on('finish', () => {
+        //     console.log('playAudio finish');
+        //     // 再生し終わった音声ファイルを削除する
+        //     if (queue[0].deleteFlg) {
+        //         fs.unlinkSync(queue[0].path, function (err) {
+        //             if (err) {
+        //                 throw (err);
+        //             }
+        //         });
+        //         console.log(`playAudio mp3 deleted`);
+        //     }
+        //     queue.shift()
+        //     isPlaying = false;
+        //     playAudio()
+        // });
     }
 }
 
@@ -141,8 +182,7 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
     });
 
     // discordのメッセージ受信イベント
-    discordClient.on("message", async message => {
-
+    discordClient.on("messageCreate", async message => {
         if (message.author.bot) {
             // ボットの場合処理を抜ける
             return;
@@ -162,12 +202,33 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                 const input = message.content.replace(prefix, "").split(" ")
                 const command = input[0]
                 const args = input.slice(1);
-
+                const memberVC = message.member.voice.channel;
+                if (!memberVC) {
+                    console.log("接続先のVCが見つかりません。");
+                  }
+                  if (!memberVC.joinable) {
+                    console.log("VCに接続できません。");
+                  }
+                  if (!memberVC.speakable) {
+                    console.log("VCで音声を再生する権限がありません。");
+                  }
                 if (command === "buzz") {
                     if (args.length > 0) {
                         if (args[0] === "join") {
                             console.log("/buzz join");
-                            connection = await message.member.voice.channel.join();
+                            // connection = await message.member.voice.channel.join();
+                            connection = joinVoiceChannel(
+                                {
+                                    channelId: memberVC.id,
+                                    guildId: message.guild.id,
+                                    adapterCreator: message.guild.voiceAdapterCreator
+                                });
+                            player = createAudioPlayer({
+                                behaviors: {
+                                  noSubscriber: NoSubscriberBehavior.Pause,
+                                },
+                              });
+                            connection.subscribe(player);
                             createSpeech("BUZZ has started", "en");
                         } else if (args[0] === "shutdown" || args[0] === "exit") {
                             console.log("/buzz shutdown or exit");
@@ -206,7 +267,7 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
     });
 
     // discordのメッセージ受信イベント
-    discordClientJingle.on("message", async message => {
+    discordClientJingle.on("messageCreate", async message => {
 
         if (message.author.bot) {
             // ボットの場合処理を抜ける
@@ -232,10 +293,31 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                     if (args.length > 0) {
                         if (args[0] === "join") {
                             console.log("/buzz join");
-                            connectionJingle = await message.member.voice.channel.join();
-                            connectionJingle.play(`audio/kansei_hakushu.mp3`, {
-                                volume: 0.5,
-                            });
+                            connectionJingle = joinVoiceChannel(
+                                {
+                                    channelId: message.member.voice.channel.id,
+                                    guildId: message.guild.id,
+                                    adapterCreator: message.guild.voiceAdapterCreator
+                                });
+                                
+                            playerJingle = createAudioPlayer({
+                                behaviors: {
+                                  noSubscriber: NoSubscriberBehavior.Pause,
+                                },
+                              });
+                            connectionJingle.subscribe(playerJingle);
+                            
+                            const resourceJingle = createAudioResource(`audio/kansei_hakushu.mp3`,
+                                {
+                                    inputType: StreamType.Arbitrary,
+                                    inlineVolume: true,
+                                }
+                            );
+                            resourceJingle.volume.setVolume(0.5);
+                            playerJingle.play(resourceJingle);
+                            // connectionJingle.play(`audio/kansei_hakushu.mp3`, {
+                            //     volume: 0.5,
+                            // });
                         } else if (args[0] === "shutdown" || args[0] === "exit") {
                             console.log("/buzz shutdown or exit");
                             connectionJingle.disconnect();
@@ -255,7 +337,9 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
 
     // discordにログインする
     discordClient.login(discordbottoken);
-    discordClientJingle.login(discordbottokenjingl);
+
+    // client1つしかメッセージが受信できず、かつあと勝ちになるため、Jingleは廃止
+    //discordClientJingle.login(discordbottokenjingl);
 });
 
 // バズコマンド処理
@@ -288,9 +372,14 @@ function buzzCommand(args) {
         console.log("/buzz jingle");
         const mp3FileName = args[1];
         console.log('jingle play : ' + mp3FileName);
-        connectionJingle.play(`audio/${mp3FileName}`, {
-            volume: 0.5,
-        });
+        
+        const resourceJingle = createAudioResource(`audio/${mp3FileName}`,
+            {
+                inputType: StreamType.Arbitrary,
+                inlineVolume: true,
+            }
+        );
+        playerJingle.play(resourceJingle);
     } else if (args[0] == "ng") {
         createSpeech("nice Gandhi", "en");
     } else if (args[0] == "tm") {
@@ -411,10 +500,8 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
                     createSpeech(result1, "ja");
                 })
             } else {
-                const wavenetName = "ja-JP-Wavenet-D";
-                if (comment.author.name == "ayaka") {
-                    wavenetName = "ja-JP-Wavenet-B";
-                } else if (comment.author.name == "お母さん") {
+                const wavenetName = "ja-JP-Wavenet-A";
+                if (comment.author.name == "お母さん") {
                     wavenetName = "ja-JP-Wavenet-C";
                 }
                 createSpeech(comment.author.name + 'さん, ' + messageText, "ja", wavenetName);
@@ -440,9 +527,15 @@ ipcMain.on('asynchronous-buzz-command', (event, commandText) => {
 
 ipcMain.on('asynchronous-jingle', (event, mp3FileName) => {
     console.log('jingle play : ' + mp3FileName);
-    connectionJingle.play(`audio/${mp3FileName}`, {
-        volume: 0.5,
-    });
+    
+    const resourceJingle = createAudioResource(`audio/${mp3FileName}`,
+        {
+            inputType: StreamType.Arbitrary,
+            inlineVolume: true,
+        }
+    );
+    resourceJingle.volume.setVolume(0.5);
+    playerJingle.play(resourceJingle);
 });
 
 async function createSpeech2(text, languageCode, name) {
@@ -500,7 +593,7 @@ async function createSpeech(text, languageCode, name = "") {
     const request = {
         input: { text: text },
         // Select the language and SSML voice gender (optional)
-        voice: { languageCode: languageCode, ssmlGender: 'NEUTRAL', name: name },
+        voice: { languageCode: languageCode, ssmlGender: 'WaveNet', name: name },
         // select the type of audio encoding
         audioConfig: { audioEncoding: 'MP3' },
     };
