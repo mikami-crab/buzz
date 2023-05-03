@@ -123,24 +123,6 @@ function playAudio() {
         });
         resource.volume.setVolume(0.5);
         player.play(resource);
-        player.on(AudioPlayerStatus.Idle, () => {
-            console.log('playAudio finish');
-            // 再生し終わった音声ファイルを削除する
-            if (buzzPlayQueue.length <= 0) {
-                return;
-            }
-            if (buzzPlayQueue[0].deleteFlg) {
-                fs.unlinkSync(buzzPlayQueue[0].path, function (err) {
-                    if (err) {
-                        throw (err);
-                    }
-                });
-                console.log(`playAudio mp3 deleted`);
-            }
-            buzzPlayQueue.shift()
-            isPlaying = false;
-            playAudio()
-        });
 
 
         // const dispatcher = connection.play(queue[0].path, {
@@ -227,7 +209,27 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                                 behaviors: {
                                   noSubscriber: NoSubscriberBehavior.Pause,
                                 },
-                              });
+                            });
+                              
+                            player.on(AudioPlayerStatus.Idle, () => {
+                                console.log('playAudio finish');
+                                // 再生し終わった音声ファイルを削除する
+                                if (buzzPlayQueue.length <= 0) {
+                                    return;
+                                }
+                                if (buzzPlayQueue[0].deleteFlg) {
+                                    fs.unlinkSync(buzzPlayQueue[0].path, function (err) {
+                                        if (err) {
+                                            throw (err);
+                                        }
+                                    });
+                                    console.log(`playAudio mp3 deleted`);
+                                }
+                                buzzPlayQueue.shift()
+                                isPlaying = false;
+                                playAudio()
+                            });
+                            
                             connection.subscribe(player);
                             createSpeech("BUZZ has started", "en");
                         } else if (args[0] === "shutdown" || args[0] === "exit") {
@@ -500,7 +502,7 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
                     createSpeech(result1, "ja");
                 })
             } else {
-                const wavenetName = "ja-JP-Wavenet-A";
+                let wavenetName = "ja-JP-Wavenet-A";
                 if (comment.author.name == "お母さん") {
                     wavenetName = "ja-JP-Wavenet-C";
                 }
