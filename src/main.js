@@ -96,7 +96,7 @@ function addAudioToQueue(path, voiceChannel, deleteFlg = true, file = null) {
     );
 }
 
-function playAudio() {
+async function playAudio() {
     console.log('playAudio start');
 
     // キューがないなら何もしない
@@ -489,22 +489,24 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
             if (messageText.match(/^[\x20-\x7e]*$/)) {
                 const honyaku = translateTextBasic(messageText, "ja");
                 honyaku.then(function (result1) {
-                    createSpeech(comment.author.name + 'さん', "ja");
+                    createSpeech(comment.author.name + 'さん, ' + result1, "ja");
                     createSpeech(messageText, "en");
-                    createSpeech(result1, "ja");
+                    // createSpeech(result1, "ja");
                 })
             // 中国語の場合
             } else if (messageText.match(/^[一-龥]*$/)) {
                 const honyaku = translateTextBasic(messageText, "ja");
                 honyaku.then(function (result1) {
-                    createSpeech(comment.author.name + 'さん', "ja");
+                    createSpeech(comment.author.name + 'さん, ' + result1, "ja");
                     createSpeech(messageText, "zh_CN");
-                    createSpeech(result1, "ja");
+                    // createSpeech(, "ja");
                 })
             } else {
                 let wavenetName = "ja-JP-Wavenet-A";
                 if (comment.author.name == "お母さん") {
                     wavenetName = "ja-JP-Wavenet-C";
+                    createSpeech('おかあさん, ' + messageText, "ja", wavenetName);
+                    return;
                 }
                 createSpeech(comment.author.name + 'さん, ' + messageText, "ja", wavenetName);
             }
@@ -575,7 +577,7 @@ async function createSpeech2(text, languageCode, name) {
     addAudioToQueue(`audio/${a}.mp3`, voiceChannel, true, response.audioContent);
 
     if (!isPlaying) {
-        playAudio()
+        await playAudio()
     }
 }
 async function createSpeech(text, languageCode, name = "") {
@@ -617,7 +619,7 @@ async function createSpeech(text, languageCode, name = "") {
     addAudioToQueue(`audio/${a}.mp3`, voiceChannel, true, response.audioContent);
 
     if (!isPlaying) {
-        playAudio()
+        await playAudio()
     }
 }
 
