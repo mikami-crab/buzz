@@ -2,7 +2,7 @@ const {
     joinVoiceChannel, entersState, VoiceConnectionStatus, createAudioResource, StreamType, createAudioPlayer, AudioPlayerStatus, NoSubscriberBehavior, generateDependencyReport  
 } = require("@discordjs/voice");
 console.log(generateDependencyReport());
-const LiveChat = require('youtube-chat').LiveChat;
+const { LiveChat } = require("youtube-chat");
 const { app, Menu, BrowserWindow } = require('electron');
 const { ipcMain } = require('electron');
 const path = require('path');
@@ -22,10 +22,6 @@ const textToSpeechClient = new textToSpeech.TextToSpeechClient();
 let mainWindow;
 
 const discordClient = new Client({
-	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages]
-});
-
-const discordClientJingle = new Client({
 	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages]
 });
 
@@ -66,9 +62,6 @@ function createWindow() {
         mainWindow = null;
         if (connection != null) {
             connection.disconnect();
-        }
-        if (connectionJingle != null) {
-            connectionJingle.disconnect();
         }
     });
 }
@@ -120,12 +113,11 @@ async function playAudio() {
 }
 
 // UI側からの各パラメーター受信
-ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbottokenjingl, texttospeechapikey, gcpprojectid) => {
+ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, texttospeechapikey, gcpprojectid) => {
 
     process.env.GOOGLE_APPLICATION_CREDENTIALS = texttospeechapikey;
 
     store.set("discord_bot_token", discordbottoken);
-    store.set("discord_bot_token_jingle", discordbottokenjingl);
     store.set("text_to_speech_api_key_path", texttospeechapikey);
     store.set("gcp_project_id", gcpprojectid); // AutoML未使用。使っていない。
 
@@ -170,8 +162,6 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                 if (command === "buzz") {
                     if (args.length > 0) {
                         if (args[0] === "join") {
-                            console.log("/buzz join");
-                            // connection = await message.member.voice.channel.join();
                             connection = joinVoiceChannel(
                                 {
                                     channelId: memberVC.id,
@@ -184,7 +174,7 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                                 },
                             });
                               
-                            player.on(AudioPlayerStatus.Idle, () => {
+                            player.on(AudioPlayerStatus.Idle, async () => {
                                 console.log('playAudio finish');
                                 // 再生し終わった音声ファイルを削除する
                                 if (buzzPlayQueue.length <= 0) {
@@ -200,11 +190,11 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                                 }
                                 buzzPlayQueue.shift()
                                 isPlaying = false;
-                                playAudio().catch((code) => { console.error("error:" + code);});
+                                await playAudio().catch((code) => { console.error("error:" + code);});
                             });
                             
                             connection.subscribe(player);
-                            createSpeech("BUZZ has started", "en");
+                            await createSpeech("BUZZ has started", "en").catch((code) => { console.error("error:" + code);});
                         } else if (args[0] === "shutdown" || args[0] === "exit") {
                             console.log("/buzz shutdown or exit");
                             connection.disconnect();
@@ -214,13 +204,10 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                             const sourceLanguageCode = args[1];
                             const targetLanguageCode = args[2];
                             const text = args[3];
-                            const honyaku = translateTextBasic(text, targetLanguageCode);
-                            honyaku.then(function (result1) {
-                                createSpeech(text, sourceLanguageCode);
-                                createSpeech(result1, targetLanguageCode);
-                                message.reply(result1);
-                            })
-                            // translateText(text, sourceLanguageCode, targetLanguageCode);
+                            const honyaku = await translateTextBasic(text, targetLanguageCode).catch((code) => { console.error("error:" + code);});
+                            await createSpeech(text, sourceLanguageCode).catch((code) => { console.error("error:" + code);});
+                            await createSpeech(honyaku, targetLanguageCode).catch((code) => { console.error("error:" + code);});
+                            await message.reply(result1).catch((code) => { console.error("error:" + code);});
                         } else {
                             buzzCommand(args);
                         }
@@ -241,31 +228,28 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
 });
 
 // バズコマンド処理
-function buzzCommand(args) {
+async function buzzCommand(args) {
     console.log("buzzCommand start : " + args[0]);
     if (args[0] == "tran" || args[0] == "translate") {
         console.log("/buzz tran or translate");
         const sourceLanguageCode = args[1];
         const targetLanguageCode = args[2];
         const text = args.slice(3).join(" ");
-        const honyaku = translateTextBasic(text, targetLanguageCode);
-        honyaku.then(function (result1) {
-            createSpeech(text, sourceLanguageCode);
-            createSpeech(result1, targetLanguageCode);
-            //message.reply(result1);
-        })
+        const honyaku = await translateTextBasic(text, targetLanguageCode).catch((code) => { console.error("error:" + code);});
+        await createSpeech(text, sourceLanguageCode).catch((code) => { console.error("error:" + code);});
+        await createSpeech(honyaku, targetLanguageCode).catch((code) => { console.error("error:" + code);});
     } else if (args[0] == "speak" || args[0] == "tts") {
         console.log("/buzz speak");
         const languageCode = args[1];
         const text = args.slice(2).join(" ");
-        createSpeech(text, languageCode);
+        await createSpeech(text, languageCode).catch((code) => { console.error("error:" + code);});
     } else if (args[0] == "dice") {
         console.log("/buzz dice");
         const members = args[1].split(',');
 
         const memberIndex = Math.floor(Math.random() * members.length);
 
-        createSpeech(members.join(" ") + "で抽選します。考え中……考え中……考え中……。選ばれたのは" + members[memberIndex] + "です。", "ja");
+        await createSpeech(members.join(" ") + "で抽選します。考え中……考え中……考え中……。選ばれたのは" + members[memberIndex] + "です。", "ja-jp").catch((code) => { console.error("error:" + code);});
     }
     console.log("buzzCommand end");
 }
@@ -286,11 +270,17 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
     });
 
     // live chat コメント取得イベント
-    liveChat.on('comment', async (comment) => {
+    liveChat.on('chat', async (chatItem) => {
         var messageText = '';
-        comment.message.forEach(element => messageText += element.text);
+        chatItem.message.forEach(function( element ) {
+            if (element instanceof EmojiItem) {
+                
+            } else {
+                messageText += element.text;
+            }
+        });
         // 画面側にチャット内容を送信
-        event.reply('asynchronous-liveId-reply', comment.author.name + 'さん, ' + messageText);
+        event.reply('asynchronous-liveId-reply', chatItem.author.name + 'さん, ' + messageText);
 
         const input = messageText.replace(prefix, "").split(" ")
         const command = input[0]
@@ -299,32 +289,28 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
         if (command === "buzz") {
             buzzCommand(args);
         } else {
-            let authorName = comment.author.name + 'さん, ';
-            if (comment.author.name == "お母さん") {
+            let authorName = chatItem.author.name + 'さん, ';
+            if (chatItem.author.name == "お母さん") {
                 authorName = "おかあさん, "
             }
             // 英語の場合
             if (messageText.match(/^[\x20-\x7e]*$/)) {
-                const honyaku = translateTextBasic(messageText, "ja");
-                honyaku.then(async function (result1) {
-                    await createSpeech(authorName + ', ' + result1, "ja").catch((code) => { console.error("error:" + code);});
-                    await createSpeech(messageText, "en").catch((code) => { console.error("error:" + code);});
-                })
+                const honyaku = await translateTextBasic(messageText, "ja-jp").catch((code) => { console.error("error:" + code);});
+                await createSpeech(authorName + ', ' + honyaku, "ja-jp").catch((code) => { console.error("error:" + code);});
+                await createSpeech(messageText, "en").catch((code) => { console.error("error:" + code);});
             // 中国語の場合
             } else if (messageText.match(/^([一-龥．\. 　]|[\x20-\x7e])*$/)) {
-                const honyaku = translateTextBasic(messageText, "ja");
-                honyaku.then(async function (result1) {
-                    await createSpeech(authorName + ', ' + result1, "ja").catch((code) => { console.error("error:" + code);});
-                    await createSpeech(messageText, "zh_CN").catch((code) => { console.error("error:" + code);});
-                })
+                const honyaku = await translateTextBasic(messageText, "ja-jp").catch((code) => { console.error("error:" + code);});
+                await createSpeech(authorName + ', ' + honyaku, "ja-jp").catch((code) => { console.error("error:" + code);});
+                await createSpeech(messageText, "zh_CN").catch((code) => { console.error("error:" + code);});
             } else {
                 let wavenetName = "ja-JP-Neural2-B";
-                if (comment.author.name == "お母さん") {
+                if (chatItem.author.name == "お母さん") {
                     wavenetName = "ja-JP-Neural2-C";
-                } else if (comment.author.name.includes("ハメ子")) {
+                } else if (chatItem.author.name.includes("ハメ子")) {
                     wavenetName = "ja-JP-Neural2-D";
                 }
-                await createSpeech(authorName + ', ' + messageText, "ja", wavenetName).catch((code) => { console.error("error:" + code);});
+                await createSpeech(authorName + ', ' + messageText, "ja-jp", wavenetName).catch((code) => { console.error("error:" + code);});
             }
         }
     });
@@ -345,19 +331,6 @@ ipcMain.on('asynchronous-buzz-command', (event, commandText) => {
     buzzCommand(args);
 });
 
-ipcMain.on('asynchronous-jingle', (event, mp3FileName) => {
-    console.log('jingle play : ' + mp3FileName);
-    
-    const resourceJingle = createAudioResource(`audio/${mp3FileName}`,
-        {
-            inputType: StreamType.Arbitrary,
-            inlineVolume: true,
-        }
-    );
-    resourceJingle.volume.setVolume(0.5);
-    playerJingle.play(resourceJingle);
-});
-
 async function createSpeech(text, languageCode, name = "") {
 
     if (connection != null) {
@@ -375,7 +348,7 @@ async function createSpeech(text, languageCode, name = "") {
     const request = {
         input: { text: text },
         // Select the language and SSML voice gender (optional)
-        voice: { languageCode: languageCode, ssmlGender: 'NEUTRAL', name: name },
+        voice: { languageCode: languageCode, ssmlGender: 'SSML_VOICE_GENDER_UNSPECIFIED', name: name },
         // select the type of audio encoding
         audioConfig: { audioEncoding: 'MP3' },
     };
@@ -415,12 +388,8 @@ const translateBasic = new Translate();
 
 // async function translateTextBasic(text, target) {
 async function translateTextBasic(text, target) {
-    // Translates the text into the target language. "text" can be a string for
-    // translating a single piece of text, or an array of strings for translating
-    // multiple texts.
-    //let [translations] = await translateBasic.translate(text, target);
     console.log(`text - target: ${text} - ${target}`);
-    let [translations] = await translateBasic.translate(text, target);
+    let [translations] = await translateBasic.translate(text, target).catch((code) => { console.error("error:" + code);});
     translations = Array.isArray(translations) ? translations : [translations];
     let result = "";
     translations.forEach((translation, i) => {
@@ -478,6 +447,5 @@ ipcMain.on('asynchronous-init-param', (event, discordbottoken) => {
     event.reply('asynchronous-init-param-reply',
         store.get("discord_bot_token"),
         store.get("text_to_speech_api_key_path"),
-        store.get("discord_bot_token_jingle"),
         store.get("gcp_project_id"));
 });

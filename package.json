@@ -34,6 +34,6 @@
     "opusscript": "^0.0.8",
     "tslib": "^2.1.0",
     "vue": "^2.6.12",
-    "youtube-chat": "github:IcedCoffeee/youtube-chat"
+    "youtube-chat": "^2.2.0"
   }
 }
