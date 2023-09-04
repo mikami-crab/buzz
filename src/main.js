@@ -115,11 +115,7 @@ async function playAudio() {
         {
           inputType: StreamType.Arbitrary,
           inlineVolume: true,
-        }).catch((code) => { console.error("error:" + code);});
-        
-        if (resource == null) {
-            return;
-        }
+        });
 
         resource.volume.setVolume(0.5);
         player.play(resource);
@@ -243,85 +239,8 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
     }
     );
 
-    discordClientJingle.on("ready", () => {
-        discordClientJingle.user.setPresence({ game: { name: 'A well well darling' } });
-        console.log("jingle ready...");
-    });
-
-    // discordのメッセージ受信イベント
-    discordClientJingle.on("messageCreate", async message => {
-
-        if (message.author.bot) {
-            // ボットの場合処理を抜ける
-            return;
-        } else {
-            // ボットでは無い場合
-
-            // 発言者が現在いるボイスチャンネルを取得する
-            const authorChannelId = message.member.voice.channel.id
-
-            if (message.user == message.client.user || authorChannelId == null) {
-                return;
-            }
-
-            // buzzコマンド
-            if (message.content.startsWith(prefix)) {
-
-                const input = message.content.replace(prefix, "").split(" ")
-                const command = input[0]
-                const args = input.slice(1);
-
-                if (command === "buzz") {
-                    if (args.length > 0) {
-                        if (args[0] === "join") {
-                            console.log("/buzz join");
-                            connectionJingle = joinVoiceChannel(
-                                {
-                                    channelId: message.member.voice.channel.id,
-                                    guildId: message.guild.id,
-                                    adapterCreator: message.guild.voiceAdapterCreator
-                                });
-                                
-                            playerJingle = createAudioPlayer({
-                                behaviors: {
-                                  noSubscriber: NoSubscriberBehavior.Pause,
-                                },
-                              });
-                            connectionJingle.subscribe(playerJingle);
-                            
-                            const resourceJingle = createAudioResource(`audio/kansei_hakushu.mp3`,
-                                {
-                                    inputType: StreamType.Arbitrary,
-                                    inlineVolume: true,
-                                }
-                            );
-                            resourceJingle.volume.setVolume(0.5);
-                            playerJingle.play(resourceJingle);
-                            // connectionJingle.play(`audio/kansei_hakushu.mp3`, {
-                            //     volume: 0.5,
-                            // });
-                        } else if (args[0] === "shutdown" || args[0] === "exit") {
-                            console.log("/buzz shutdown or exit");
-                            connectionJingle.disconnect();
-                            connectionJingle = null;
-                        }
-                    }
-                }
-
-            } else if (connectionJingle != null) {
-                // チャットメッセージから何かを喋らせる予定はない
-                // 何か喋らせたいときはここに追加
-            }
-            return;
-        }
-    }
-    );
-
     // discordにログインする
     discordClient.login(discordbottoken);
-
-    // client1つしかメッセージが受信できず、かつあと勝ちになるため、Jingleは廃止
-    //discordClientJingle.login(discordbottokenjingl);
 });
 
 // バズコマンド処理
@@ -350,88 +269,6 @@ function buzzCommand(args) {
         const memberIndex = Math.floor(Math.random() * members.length);
 
         createSpeech(members.join(" ") + "で抽選します。考え中……考え中……考え中……。選ばれたのは" + members[memberIndex] + "です。", "ja");
-    } else if (args[0] == "jingle") {
-        console.log("/buzz jingle");
-        const mp3FileName = args[1];
-        console.log('jingle play : ' + mp3FileName);
-        
-        const resourceJingle = createAudioResource(`audio/${mp3FileName}`,
-            {
-                inputType: StreamType.Arbitrary,
-                inlineVolume: true,
-            }
-        );
-        playerJingle.play(resourceJingle);
-    } else if (args[0] == "ng") {
-        createSpeech("nice Gandhi", "en");
-    } else if (args[0] == "tm") {
-        createSpeech("tamani mendy", "en");
-    } else if (args[0] == "km") {
-        createSpeech("kanojo wa itsumo milk tea", "en");
-    } else if (args[0] == "ngtm") {
-        createSpeech("nice Gandhi, tamani mendy", "en");
-    } else if (args[0] == "ngtmkm") {
-        createSpeech("nice Gandhi, tamani mendy, kanojo wa itsumo milk tea", "en");
-    } else if (args[0] == "ops") {
-        createSpeech("oppai no perapera source", "en");
-    } else if (args[0] == "kl") {
-        createSpeech("kill leader", "en");
-    } else if (args[0] == "tsuyoi") {
-        createSpeech("tsuyoi", "en");
-    } else if (args[0] == "welcome") {
-        createSpeech("welcome", "en");
-    } else if (args[0] == "youkoso") {
-        createSpeech("yoh-koso", "en");
-    } else if (args[0] == "thankyou") {
-        createSpeech("thank you", "en");
-    } else if (args[0] == "arigato") {
-        createSpeech("ari-ga-toh", "en");
-    } else if (args[0] == "iscrazy") {
-        createSpeech("is crazy", "en");
-    } else if (args[0] == "ispretty") {
-        createSpeech("is pretty", "en");
-    } else if (args[0] == "isbeautiful") {
-        createSpeech("is beautiful", "en");
-    } else if (args[0] == "isfabulous") {
-        createSpeech("is fabulous", "en");
-    } else if (args[0] == "ismarvelous") {
-        createSpeech("is marvelous", "en");
-    }
-    //
-    else if (args[0] == "anesan") {
-        createSpeech("a-Ne saan", "en");
-    } else if (args[0] == "tsukimisan") {
-        createSpeech("tsukimi saan", "en");
-    } else if (args[0] == "shocho") {
-        createSpeech("shochoh", "en");
-    } else if (args[0] == "uyatsan") {
-        createSpeech("u-yat saan", "en");
-    } else if (args[0] == "mikamilion") {
-        createSpeech("mikami lion", "en");
-    } else if (args[0] == "oyakata") {
-        createSpeech("oyakata", "en");
-    } else if (args[0] == "taisho") {
-        createSpeech("udon taisho", "en");
-    } else if (args[0] == "bittonsan") {
-        createSpeech("bit-ton saan", "en");
-    } else if (args[0] == "komachan") {
-        createSpeech("koma chan", "en");
-    } else if (args[0] == "kaba") {
-        createSpeech("kaba-da-chon saan", "en");
-    } else if (args[0] == "fumeichan") {
-        createSpeech("fumei chan", "en");
-    } else if (args[0] == "mokasan") {
-        createSpeech("moka saan", "en");
-    }
-    //
-    else if (args[0] == "kuroaya") {
-        createSpeech("kuro-aya", "en");
-    }
-    else if (args[0] == "mochiduki") {
-        createSpeech("mochizuki saan", "en");
-    }
-    else if (args[0] == "yoyo") {
-        createSpeech("yoh yoh saan", "en");
     }
     console.log("buzzCommand end");
 }
