@@ -108,11 +108,6 @@ async function playAudio() {
     // キューが残ってて再生できる状態の場合
     if (buzzPlayQueue.length >= 1 && !isPlaying) {
         isPlaying = true;
-        // if (queue[0].file != null) {
-        //     const dispatcher = connection.play(queue[0].file, {
-        //         volume: 0.5,
-        //     });
-        // }
 
         console.log('playAudio play : ' + buzzPlayQueue[0].path);
         
@@ -120,29 +115,14 @@ async function playAudio() {
         {
           inputType: StreamType.Arbitrary,
           inlineVolume: true,
-        });
+        }).catch((code) => { console.error("error:" + code);});
+        
+        if (resource == null) {
+            return;
+        }
+
         resource.volume.setVolume(0.5);
         player.play(resource);
-
-
-        // const dispatcher = connection.play(queue[0].path, {
-        //     volume: 0.5,
-        // });
-        // dispatcher.on('finish', () => {
-        //     console.log('playAudio finish');
-        //     // 再生し終わった音声ファイルを削除する
-        //     if (queue[0].deleteFlg) {
-        //         fs.unlinkSync(queue[0].path, function (err) {
-        //             if (err) {
-        //                 throw (err);
-        //             }
-        //         });
-        //         console.log(`playAudio mp3 deleted`);
-        //     }
-        //     queue.shift()
-        //     isPlaying = false;
-        //     playAudio()
-        // });
     }
 }
 
@@ -485,30 +465,32 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
         if (command === "buzz") {
             buzzCommand(args);
         } else {
+            let authorName = comment.author.name + 'さん, ';
+            if (comment.author.name == "お母さん") {
+                authorName = "おかあさん, "
+            }
             // 英語の場合
             if (messageText.match(/^[\x20-\x7e]*$/)) {
                 const honyaku = translateTextBasic(messageText, "ja");
                 honyaku.then(function (result1) {
-                    createSpeech(comment.author.name + 'さん, ' + result1, "ja");
+                    createSpeech(authorName + ', ' + result1, "ja");
                     createSpeech(messageText, "en");
                     // createSpeech(result1, "ja");
                 })
             // 中国語の場合
-            } else if (messageText.match(/^[一-龥]*$/)) {
+            } else if (messageText.match(/^([一-龥．\. 　]|[\x20-\x7e])*$/)) {
                 const honyaku = translateTextBasic(messageText, "ja");
                 honyaku.then(function (result1) {
-                    createSpeech(comment.author.name + 'さん, ' + result1, "ja");
+                    createSpeech(authorName + ', ' + result1, "ja");
                     createSpeech(messageText, "zh_CN");
                     // createSpeech(, "ja");
                 })
             } else {
-                let wavenetName = "ja-JP-Wavenet-A";
+                let wavenetName = "ja-JP-Neural2-B";
                 if (comment.author.name == "お母さん") {
-                    wavenetName = "ja-JP-Wavenet-C";
-                    createSpeech('おかあさん, ' + messageText, "ja", wavenetName);
-                    return;
+                    wavenetName = "ja-JP-Neural2-C";
                 }
-                createSpeech(comment.author.name + 'さん, ' + messageText, "ja", wavenetName);
+                createSpeech(authorName + ', ' + messageText, "ja", wavenetName);
             }
         }
     });
@@ -603,11 +585,15 @@ async function createSpeech(text, languageCode, name = "") {
     };
 
     // Performs the text-to-speech request
-    const [response] = await textToSpeechClient.synthesizeSpeech(request);
+    const [response] = await textToSpeechClient.synthesizeSpeech(request).catch((code) => { console.error("error:" + code);});
     // Write the binary audio content to a local file
     //const writeFile = util.promisify(fs.writeFile);
     //await writeFile('output.mp3', response.audioContent, 'binary');
     console.log('Audio content written to file: output.mp3');
+
+    if (response == null) {
+        return;
+    }
 
     var date = new Date();
     var a = date.getTime();
