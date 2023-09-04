@@ -34,9 +34,6 @@ let voiceChannel = null;
 let connection = null;
 let player = null;
 
-let connectionJingle = null;
-let playerJingle = null;
-
 let buzzPlayQueue = [];
 let isPlaying = false;
 let gcpProjectId = "";
@@ -90,7 +87,7 @@ app.on('activate', () => {
     }
 });
 
-function addAudioToQueue(path, voiceChannel, deleteFlg = true, file = null) {
+async function addAudioToQueue(path, voiceChannel, deleteFlg = true, file = null) {
     buzzPlayQueue.push(
         { path: path, voiceChannel: voiceChannel, deleteFlg: deleteFlg, file: file }
     );
@@ -203,7 +200,7 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, discordbo
                                 }
                                 buzzPlayQueue.shift()
                                 isPlaying = false;
-                                playAudio()
+                                playAudio().catch((code) => { console.error("error:" + code);});
                             });
                             
                             connection.subscribe(player);
@@ -289,7 +286,7 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
     });
 
     // live chat コメント取得イベント
-    liveChat.on('comment', (comment) => {
+    liveChat.on('comment', async (comment) => {
         var messageText = '';
         comment.message.forEach(element => messageText += element.text);
         // 画面側にチャット内容を送信
@@ -309,25 +306,23 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
             // 英語の場合
             if (messageText.match(/^[\x20-\x7e]*$/)) {
                 const honyaku = translateTextBasic(messageText, "ja");
-                honyaku.then(function (result1) {
-                    createSpeech(authorName + ', ' + result1, "ja");
-                    createSpeech(messageText, "en");
-                    // createSpeech(result1, "ja");
+                honyaku.then(async function (result1) {
+                    await createSpeech(authorName + ', ' + result1, "ja").catch((code) => { console.error("error:" + code);});
+                    await createSpeech(messageText, "en").catch((code) => { console.error("error:" + code);});
                 })
             // 中国語の場合
             } else if (messageText.match(/^([一-龥．\. 　]|[\x20-\x7e])*$/)) {
                 const honyaku = translateTextBasic(messageText, "ja");
-                honyaku.then(function (result1) {
-                    createSpeech(authorName + ', ' + result1, "ja");
-                    createSpeech(messageText, "zh_CN");
-                    // createSpeech(, "ja");
+                honyaku.then(async function (result1) {
+                    await createSpeech(authorName + ', ' + result1, "ja").catch((code) => { console.error("error:" + code);});
+                    await createSpeech(messageText, "zh_CN").catch((code) => { console.error("error:" + code);});
                 })
             } else {
                 let wavenetName = "ja-JP-Neural2-B";
                 if (comment.author.name == "お母さん") {
                     wavenetName = "ja-JP-Neural2-C";
                 }
-                createSpeech(authorName + ', ' + messageText, "ja", wavenetName);
+                await createSpeech(authorName + ', ' + messageText, "ja", wavenetName).catch((code) => { console.error("error:" + code);});
             }
         }
     });
@@ -393,7 +388,7 @@ async function createSpeech2(text, languageCode, name) {
         response.audioContent
     );
 
-    addAudioToQueue(`audio/${a}.mp3`, voiceChannel, true, response.audioContent);
+    await addAudioToQueue(`audio/${a}.mp3`, voiceChannel, true, response.audioContent);
 
     if (!isPlaying) {
         await playAudio()
