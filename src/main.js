@@ -321,6 +321,8 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
                 let wavenetName = "ja-JP-Neural2-B";
                 if (comment.author.name == "お母さん") {
                     wavenetName = "ja-JP-Neural2-C";
+                } else if (comment.author.name.includes("ハメ子")) {
+                    wavenetName = "ja-JP-Neural2-D";
                 }
                 await createSpeech(authorName + ', ' + messageText, "ja", wavenetName).catch((code) => { console.error("error:" + code);});
             }
@@ -356,44 +358,6 @@ ipcMain.on('asynchronous-jingle', (event, mp3FileName) => {
     playerJingle.play(resourceJingle);
 });
 
-async function createSpeech2(text, languageCode, name) {
-    
-    if (connection != null) {
-        console.log("createSpeech discord connected")
-    } else {
-        console.log("createSpeech discord disconnected, skip text-to-speech")
-        return;
-    }
-
-    // Construct the request
-    const request = {
-        input: { text: text },
-        // Select the language and SSML voice gender (optional)
-        voice: { languageCode: languageCode,name: name, ssmlGender: 'NEUTRAL' },
-        // select the type of audio encoding
-        audioConfig: { audioEncoding: 'MP3' },
-    };
-
-    // Performs the text-to-speech request
-    const [response] = await textToSpeechClient.synthesizeSpeech(request);
-    // Write the binary audio content to a local file
-    //const writeFile = util.promisify(fs.writeFile);
-    //await writeFile('output.mp3', response.audioContent, 'binary');
-    console.log('Audio content written to file: output.mp3');
-
-    var date = new Date();
-    var a = date.getTime();
-    fs.writeFileSync(
-        `audio/${a}.mp3`,
-        response.audioContent
-    );
-
-    await addAudioToQueue(`audio/${a}.mp3`, voiceChannel, true, response.audioContent);
-
-    if (!isPlaying) {
-        await playAudio()
-    }
-}
 async function createSpeech(text, languageCode, name = "") {
 
     if (connection != null) {
@@ -411,7 +375,7 @@ async function createSpeech(text, languageCode, name = "") {
     const request = {
         input: { text: text },
         // Select the language and SSML voice gender (optional)
-        voice: { languageCode: languageCode, ssmlGender: 'WaveNet', name: name },
+        voice: { languageCode: languageCode, ssmlGender: 'NEUTRAL', name: name },
         // select the type of audio encoding
         audioConfig: { audioEncoding: 'MP3' },
     };
@@ -437,7 +401,7 @@ async function createSpeech(text, languageCode, name = "") {
     addAudioToQueue(`audio/${a}.mp3`, voiceChannel, true, response.audioContent);
 
     if (!isPlaying) {
-        await playAudio()
+        await playAudio().catch((code) => { console.error("error:" + code);});
     }
 }
 
