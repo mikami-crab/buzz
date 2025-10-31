@@ -103,9 +103,9 @@ ipcMain.on('asynchronous-discordserverstart', (event, discordbottoken, texttospe
 
     gcpProjectId = gcpprojectid;
 
-    discordClient.on("ready", () => {
+    discordClient.on("clientReady", () => {
         discordClient.user.setPresence({ game: { name: 'Watch your step darling' } });
-        console.log("ready...");
+        console.log("clientReady...");
     });
 
     // discordのメッセージ受信イベント
@@ -227,14 +227,15 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
         var messageText = '';
         chatItem.message.forEach(function( messageItem ) {
             try {
-                if (messageItem instanceof EmojiItem) {
-                    console.log("messageItem.alt       : " + messageItem.alt);
-                    console.log("messageItem.emojiText : " + messageItem.emojiText);
-                    messageText += messageItem.alt;
-                } else {
-                    console.log("messageItem.text      : " + messageItem.text);
-                    messageText += messageItem.text;
-                }
+                messageText += messageItem.text;
+                // if (messageItem instanceof EmojiItem) {
+                //     console.log("messageItem.alt       : " + messageItem.alt);
+                //     console.log("messageItem.emojiText : " + messageItem.emojiText);
+                //     messageText += messageItem.alt;
+                // } else {
+                //     console.log("messageItem.text      : " + messageItem.text);
+                //     messageText += messageItem.text;
+                // }
             } catch (error) {
                 console.error(error);
             }
@@ -254,27 +255,23 @@ ipcMain.on('asynchronous-liveId', (event, youtubeliveid) => {
             let wavenetName = "ja-JP-Neural2-B";
             let wavenetNameEn = "en-US-Neural2-H";
             let wavenetNameZh = "cmn-TW-Wavenet-A";
-            if (chatItem.author.name == "お母さん") {
-                authorName = "おかあさん, "
-                wavenetName = "ja-JP-Neural2-C";
-                wavenetNameEn = "en-US-Neural2-D";
-                wavenetNameZh = "cmn-TW-Wavenet-B";
-            } else if (chatItem.author.name.includes("ハメ子")) {
-                wavenetName = "ja-JP-Neural2-D";
-                wavenetNameEn = "en-US-Neural2-A";
-                wavenetNameZh = "cmn-TW-Wavenet-C";
-            }
+            let wavenetNameRu = "ru-RU-Wavenet-C";
             // 英語の場合
-            if (messageText.match(/^[\x20-\x7e]*$/)) {
+            if (messageText.match(/^([\.':"’\?\-\!,， 　]|[\x20-\x7e])*$/)) {
                 const honyaku = await translateTextBasic(messageText, "ja-jp").catch((code) => { console.error("error:" + code);});
                 await createSpeech(authorName + ', ' + honyaku, "ja-jp", wavenetName).catch((code) => { console.error("error:" + code);});
-                await createSpeech(messageText, "en", wavenetNameEn).catch((code) => { console.error("error:" + code);});
+                await createSpeech(messageText, "en-us", wavenetNameEn).catch((code) => { console.error("error:" + code);});
             // 中国語の場合
-            } else if (messageText.match(/^([一-龥．\. 　]|[\x20-\x7e])*$/)) {
+            } else if (messageText.match(/^([一-龥．\.':"’\?\-\!,， 　]|[\x20-\x7e])*$/)) {
                 const honyaku = await translateTextBasic(messageText, "ja-jp").catch((code) => { console.error("error:" + code);});
                 await createSpeech(authorName + ', ' + honyaku, "ja-jp", wavenetName).catch((code) => { console.error("error:" + code);});
-                await createSpeech(messageText, "zh_CN", wavenetNameZh).catch((code) => { console.error("error:" + code);});
+                await createSpeech(messageText, "zh_TW", wavenetNameZh).catch((code) => { console.error("error:" + code);});
+            } else if (messageText.match(/^([А-я．\.':"’\?\-\!,， 　]|[\x20-\x7e]|[\u0400-\u04FF])*$/)) {
+                const honyaku = await translateTextBasic(messageText, "ja-jp").catch((code) => { console.error("error:" + code);});
+                await createSpeech(authorName + ', ' + honyaku, "ja-jp", wavenetName).catch((code) => { console.error("error:" + code);});
+                await createSpeech(messageText, "ru", wavenetNameRu).catch((code) => { console.error("error:" + code);});
             } else {
+                // はすむかい →(はすむかい), はすむ →(はすむ)
                 await createSpeech(authorName + ', ' + messageText, "ja-jp", wavenetName).catch((code) => { console.error("error:" + code);});
             }
         }
